@@ -1,1 +1,813 @@
-<meta http-equiv="refresh" content="0; url=Psychological Statistics">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心理学統計法 クイズ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: #f0f4f3;
+    color: #333;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #4F7F8F;
+    color: white;
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  header h1 { font-size: 15px; font-weight: 700; }
+
+  .header-score {
+    font-size: 12px;
+    background: rgba(255,255,255,0.2);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .progress-wrap {
+    background: rgba(255,255,255,0.25);
+    border-radius: 4px;
+    height: 4px;
+    margin-top: 8px;
+  }
+
+  .progress-bar {
+    background: #E8A164;
+    height: 4px;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-text {
+    font-size: 11px;
+    margin-top: 4px;
+    opacity: 0.85;
+  }
+
+  .main { max-width: 680px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  /* START SCREEN */
+  .start-screen {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .start-screen h2 {
+    font-size: 22px;
+    color: #4F7F8F;
+    margin-bottom: 10px;
+  }
+
+  .start-screen p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 30px;
+    line-height: 1.7;
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 30px;
+  }
+
+  .tag {
+    background: #E7EEEC;
+    color: #4F7F8F;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .btn-start {
+    background: #4F7F8F;
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;
+    transition: background 0.2s;
+  }
+
+  .btn-start:hover { background: #3d6570; }
+
+  /* QUIZ CARD */
+  .quiz-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+
+  .q-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4F7F8F;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+
+  .q-text {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.6;
+    color: #222;
+    margin-bottom: 20px;
+  }
+
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+
+  .choice-btn {
+    background: #f0f4f3;
+    border: 2px solid #dde6e4;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.5;
+    transition: all 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .choice-btn:hover:not(:disabled) {
+    background: #E7EEEC;
+    border-color: #4F7F8F;
+  }
+
+  .choice-label {
+    font-weight: 700;
+    color: #4F7F8F;
+    min-width: 18px;
+  }
+
+  .choice-btn.correct {
+    background: #e6f4ea;
+    border-color: #4caf50;
+    color: #2e7d32;
+  }
+
+  .choice-btn.correct .choice-label { color: #2e7d32; }
+
+  .choice-btn.wrong {
+    background: #fdecea;
+    border-color: #e57373;
+    color: #c62828;
+  }
+
+  .choice-btn.wrong .choice-label { color: #c62828; }
+
+  .choice-btn.dimmed {
+    opacity: 0.45;
+  }
+
+  /* EXPLANATION */
+  .explanation {
+    background: #E7EEEC;
+    border-left: 4px solid #4F7F8F;
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+    margin-top: 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #333;
+    display: none;
+  }
+
+  .explanation.show { display: block; }
+
+  .explanation strong {
+    color: #4F7F8F;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+  }
+
+  /* NEXT BUTTON */
+  .btn-next {
+    background: #E8A164;
+    color: white;
+    border: none;
+    padding: 13px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 16px;
+    display: none;
+    transition: background 0.2s;
+  }
+
+  .btn-next.show { display: block; }
+  .btn-next:hover { background: #d4894e; }
+
+  /* RESULT SCREEN */
+  .result-screen {
+    text-align: center;
+    padding: 30px 20px;
+  }
+
+  .result-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4F7F8F, #6aa3b3);
+    margin: 0 auto 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 20px rgba(79,127,143,0.3);
+  }
+
+  .result-score-num {
+    font-size: 38px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .result-score-label { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+  .result-message {
+    font-size: 20px;
+    font-weight: 700;
+    color: #4F7F8F;
+    margin-bottom: 8px;
+  }
+
+  .result-sub {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 30px;
+    line-height: 1.6;
+  }
+
+  .result-stats {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  .stat-box {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 20px;
+    min-width: 90px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .stat-num { font-size: 24px; font-weight: 900; }
+  .stat-num.correct-color { color: #4caf50; }
+  .stat-num.wrong-color { color: #e57373; }
+  .stat-label { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .btn-retry {
+    background: #4F7F8F;
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;
+    transition: background 0.2s;
+  }
+
+  .btn-retry:hover { background: #3d6570; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <h1>心理学統計法 クイズ</h1>
+    <span class="header-score" id="headerScore">0 / 0</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+  <div class="progress-text" id="progressText">放送大学 試験対策</div>
+</header>
+
+<div class="main">
+
+  <!-- START -->
+  <div class="start-screen" id="startScreen">
+    <h2>心理学統計法<br>模擬試験</h2>
+    <p>放送大学 心理学統計法の試験対策です。<br>全53問・4択形式。解説付き。</p>
+    <div class="tag-row">
+      <span class="tag">尺度水準</span>
+      <span class="tag">仮説検定</span>
+      <span class="tag">分散分析</span>
+      <span class="tag">効果量</span>
+      <span class="tag">信頼性・妥当性</span>
+      <span class="tag">回帰分析</span>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">スタート</button>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quizArea" class="hidden">
+    <div class="quiz-card">
+      <div class="q-label" id="qLabel">問題 1 / 53</div>
+      <div class="q-text" id="qText"></div>
+      <div class="choices" id="choices"></div>
+      <div class="explanation" id="explanation">
+        <strong>解説</strong>
+        <span id="expText"></span>
+      </div>
+    </div>
+    <button class="btn-next" id="btnNext" onclick="nextQuestion()">次の問題 →</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="resultScreen" class="hidden result-screen">
+    <div class="result-circle">
+      <div class="result-score-num" id="resultScoreNum">0</div>
+      <div class="result-score-label">/ 53点</div>
+    </div>
+    <div class="result-message" id="resultMessage">お疲れさまでした！</div>
+    <div class="result-sub" id="resultSub"></div>
+    <div class="result-stats">
+      <div class="stat-box">
+        <div class="stat-num correct-color" id="correctCount">0</div>
+        <div class="stat-label">正解</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num wrong-color" id="wrongCount">0</div>
+        <div class="stat-label">不正解</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="percentNum" style="color:#4F7F8F">0%</div>
+        <div class="stat-label">正答率</div>
+      </div>
+    </div>
+    <button class="btn-retry" onclick="retryQuiz()">もう一度挑戦する</button>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  {
+    q: "心理学で統計学を用いる最も重要な理由は何か。",
+    choices: ["数学の練習をするため","心理学を難しくするため","偶然と本当の効果を区別するため","コンピュータを使うため"],
+    answer: 2,
+    exp: "統計は「偶然か、本当の介入効果か」を区別するために使います。ABAでも、PFA導入後に問題行動が減った場合、偶然ではなく介入効果であると示すために統計が必要です。"
+  },
+  {
+    q: "心理学でいう「変数」とは何か。",
+    choices: ["人","変化する値","実験室","教科書"],
+    answer: 1,
+    exp: "変数とは変化するものです。身長・IQ・幸福度・年齢・点数など、値が変わるものはすべて変数です。"
+  },
+  {
+    q: "名義尺度はどれか。",
+    choices: ["身長","温度","性別","IQ"],
+    answer: 2,
+    exp: "名義尺度はただ分類するだけで順番がありません。血液型・性別・好きな動物などが例です。"
+  },
+  {
+    q: "順序尺度はどれか。",
+    choices: ["身長","マラソン順位","温度","IQ"],
+    answer: 1,
+    exp: "順位は1位・2位・3位という順番はありますが、1位と2位の差、2位と3位の差が同じではありません。これが順序尺度です。"
+  },
+  {
+    q: "平均値が最も影響を受けるものは何か。",
+    choices: ["外れ値","順位","人数","性別"],
+    answer: 0,
+    exp: "外れ値（極端に大きいor小さい値）があると平均が大きくずれます。この場合は中央値の方が代表値として適切です。"
+  },
+  {
+    q: "標準偏差が大きいとはどういう意味か。",
+    choices: ["データがまとまっている","データがばらついている","人数が多い","平均が高い"],
+    answer: 1,
+    exp: "標準偏差はデータの散らばりを示します。大きいほど個人差が大きく、小さいほどみんな似ています。"
+  },
+  {
+    q: "相関係数が0.90だった。正しい説明はどれか。",
+    choices: ["強い正の相関","強い負の相関","因果関係がある","相関なし"],
+    answer: 0,
+    exp: "相関係数は−1〜+1の値を取ります。+0.8以上は強い正の相関、−0.8以下は強い負の相関です。0に近いほど相関なしです。"
+  },
+  {
+    q: "相関関係があると必ず因果関係があるか。",
+    choices: ["ある","ない","場合による","統計次第"],
+    answer: 1,
+    exp: "相関≠因果。例：アイスが売れると熱中症が増えるが、原因は共通の「夏」です。相関があっても因果とは言えません。"
+  },
+  {
+    q: "母集団とは何か。",
+    choices: ["実験参加者","全体集団","平均値","標本平均"],
+    answer: 1,
+    exp: "母集団は「日本人全員」など全体のことです。その一部を取り出したものが標本です。"
+  },
+  {
+    q: "標本を調べる目的は何か。",
+    choices: ["標本だけ知りたい","母集団を推測したい","数字を書くため","実験を長くするため"],
+    answer: 1,
+    exp: "標本から母集団を推測することが推測統計の目的です。100人のデータから日本人全体を推測するイメージです。"
+  },
+  {
+    q: "95％信頼区間とは何か。",
+    choices: ["95％の人が入る区間","母平均がありそうな範囲","得点の平均","偶然の確率"],
+    answer: 1,
+    exp: "同じ方法で標本抽出を繰り返したとき、95％の確率で母平均を含む区間が得られるという考え方です。「母平均がありそうな範囲の推定」と覚えておきましょう。"
+  },
+  {
+    q: "帰無仮説とは何か。",
+    choices: ["効果がある","差がある","差がない","平均が高い"],
+    answer: 2,
+    exp: "帰無仮説は「差がない・効果がない」という仮説です。これを統計的に棄却できたとき、有意差ありと判断します。"
+  },
+  {
+    q: "p値が0.03だった。正しい説明はどれか。",
+    choices: ["有意差なし","有意差あり","相関なし","平均が同じ"],
+    answer: 1,
+    exp: "有意水準α=0.05のとき、p<0.05で有意差ありと判断します。p=0.03は0.05より小さいので有意差ありです。"
+  },
+  {
+    q: "3群以上の平均を比較するとき使う分析は何か。",
+    choices: ["t検定","相関分析","分散分析（ANOVA）","回帰分析"],
+    answer: 2,
+    exp: "2群の比較にはt検定、3群以上の比較には分散分析（ANOVA）を使います。これは頻出問題です。"
+  },
+  {
+    q: "球面性違反が起こると増える誤りはどれか。",
+    choices: ["第1種の誤り","第2種の誤り","相関係数","自由度"],
+    answer: 0,
+    exp: "球面性違反ではF値が適切に評価されず、本当は差がないのに「差がある」と判断してしまう第1種の誤り（偽陽性）が増えます。Greenhouse–Geisser補正が用いられます。"
+  },
+  {
+    q: "間隔尺度の特徴として正しいのはどれか。",
+    choices: ["絶対的なゼロ点がある","順番のみわかる","差が等しい","分類のみ可能"],
+    answer: 2,
+    exp: "間隔尺度は数値の差が等しいですが、絶対的なゼロ点がありません。例：温度（0度は「温度がない」ではない）、西暦年。"
+  },
+  {
+    q: "比率尺度の例として正しいのはどれか。",
+    choices: ["気温","知能指数（IQ）","体重","順位"],
+    answer: 2,
+    exp: "比率尺度は絶対的なゼロ点があります。体重0kgは本当に「重さなし」です。身長・反応時間・頻度なども比率尺度です。"
+  },
+  {
+    q: "最頻値（モード）とは何か。",
+    choices: ["データの真ん中の値","最も頻繁に現れる値","全データの合計","標準偏差"],
+    answer: 1,
+    exp: "最頻値は最も頻繁に現れる値です。名義尺度データにも使えるのが特徴で、平均・中央値は使えません。"
+  },
+  {
+    q: "正規分布の特徴として正しいのはどれか。",
+    choices: ["左右非対称","平均・中央値・最頻値が一致する","外れ値が多い","二峰性"],
+    answer: 1,
+    exp: "正規分布は左右対称の釣り鐘型で、平均・中央値・最頻値がすべて一致します。多くの心理学的測定値はほぼ正規分布に従います。"
+  },
+  {
+    q: "標準化（z得点）の目的は何か。",
+    choices: ["データを大きくする","異なるスケールのデータを比較可能にする","相関を高める","外れ値を除去する"],
+    answer: 1,
+    exp: "z得点は平均0・標準偏差1に変換します。これにより身長と体重など異なる単位のデータを比較できます。"
+  },
+  {
+    q: "第1種の誤り（α誤り）とは何か。",
+    choices: ["本当に差があるのに差なしと判断","本当は差がないのに差ありと判断","標本が小さすぎる","相関が高すぎる"],
+    answer: 1,
+    exp: "第1種の誤りは「偽陽性」です。本当は差がないのに「差がある」と誤って判断することです。有意水準αはこの誤りの確率を設定します。"
+  },
+  {
+    q: "第2種の誤り（β誤り）とは何か。",
+    choices: ["本当は差がないのに差ありと判断","本当に差があるのに差なしと判断","標本が大きすぎる","p値が低すぎる"],
+    answer: 1,
+    exp: "第2種の誤りは「偽陰性」です。本当は差があるのに「差なし」と判断してしまうことです。サンプルサイズが小さいと起こりやすい。"
+  },
+  {
+    q: "検定力（統計的検出力）とは何か。",
+    choices: ["p値の逆数","差がないときに差なしと判断する確率","本当に差があるとき正しく差ありと判断できる確率","標準偏差の二乗"],
+    answer: 2,
+    exp: "検定力は1−βです。本当に効果があるとき、それを正しく検出できる確率です。サンプルサイズが大きいほど検定力は高くなります。"
+  },
+  {
+    q: "サンプルサイズ（n）が大きくなるとどうなるか。",
+    choices: ["p値が必ず大きくなる","小さな差でも有意になりやすい","標準偏差が大きくなる","相関係数がゼロになる"],
+    answer: 1,
+    exp: "nが大きいほど標準誤差が小さくなり、小さな差でも統計的に有意になります。大規模研究では臨床的意義がない差でも有意になることがあります。"
+  },
+  {
+    q: "効果量（effect size）とは何か。",
+    choices: ["p値と同じ","差の実際の大きさを示す指標","標本数","信頼区間の幅"],
+    answer: 1,
+    exp: "効果量はCohenのdなどで表され、差の実際の大きさを示します。p値は有意かどうかだけ、効果量は「どのくらい大きな差か」を示します。"
+  },
+  {
+    q: "Cohenのdで効果量「大」はどれか。",
+    choices: ["d = 0.1","d = 0.3","d = 0.5","d = 0.8以上"],
+    answer: 3,
+    exp: "Cohenの基準：d=0.2が小、d=0.5が中、d=0.8以上が大です。ABAの介入研究では効果量が大きいことが多いです。"
+  },
+  {
+    q: "独立変数と従属変数の関係として正しいのはどれか。",
+    choices: ["独立変数が従属変数の影響を受ける","独立変数が従属変数に影響を与える","両者は常に相関する","従属変数は操作できる"],
+    answer: 1,
+    exp: "独立変数（操作する変数）が従属変数（測定する変数）に影響を与えます。ABAでは介入が独立変数、問題行動の頻度が従属変数です。"
+  },
+  {
+    q: "対応のあるt検定を使うのはどれか。",
+    choices: ["男女2グループの平均比較","介入前後の同一人物の比較","3グループの比較","名義データの比較"],
+    answer: 1,
+    exp: "対応のあるt検定は同一人物の前後比較（反復測定）に使います。男女など別グループの比較は対応のないt検定です。"
+  },
+  {
+    q: "分散（variance）とは何か。",
+    choices: ["標準偏差の二乗","平均の二乗","中央値の差","相関係数"],
+    answer: 0,
+    exp: "分散は標準偏差の二乗です。逆に言えば標準偏差は分散の平方根です。分散分析（ANOVA）の名前はこの「分散」からきています。"
+  },
+  {
+    q: "χ²検定（カイ二乗検定）はどんなデータに使うか。",
+    choices: ["連続データ","名義・カテゴリデータ","順序データ","比率データ"],
+    answer: 1,
+    exp: "χ²検定は度数・カテゴリデータに使います。例：男女と好きなスポーツの関連を調べるときなど。"
+  },
+  {
+    q: "ノンパラメトリック検定はどんなときに使うか。",
+    choices: ["正規分布が仮定できる","サンプルが大きい","正規分布が仮定できない","変数が比率尺度"],
+    answer: 2,
+    exp: "データが正規分布に従わない場合、またはサンプルサイズが小さい場合にノンパラメトリック検定（Mann-WhitneyのU検定など）を使います。"
+  },
+  {
+    q: "単回帰分析の目的はどれか。",
+    choices: ["2変数の差を検定する","1つの変数から別の変数を予測する","3群の平均を比較する","カテゴリを分類する"],
+    answer: 1,
+    exp: "単回帰分析は1つの独立変数から従属変数を予測します。例：学習時間（独立変数）からテスト点数（従属変数）を予測。"
+  },
+  {
+    q: "重回帰分析と単回帰分析の違いは何か。",
+    choices: ["重回帰は従属変数が複数","重回帰は独立変数が複数","重回帰はノンパラメトリック","重回帰はカテゴリデータ用"],
+    answer: 1,
+    exp: "重回帰分析は複数の独立変数（予測変数）から従属変数を予測します。単回帰は独立変数が1つ、重回帰は2つ以上です。"
+  },
+  {
+    q: "多重比較問題とは何か。",
+    choices: ["変数が多すぎる問題","繰り返し検定することで第1種誤りが増える問題","サンプルが少なすぎる問題","正規分布からのずれ"],
+    answer: 1,
+    exp: "複数回の検定を繰り返すと、偶然有意になる確率（第1種誤り）が蓄積されます。これを防ぐためBonferroni法などの補正を行います。"
+  },
+  {
+    q: "Bonferroni補正とは何か。",
+    choices: ["サンプルサイズを増やす方法","有意水準を検定回数で割って厳しくする方法","正規分布を仮定する方法","相関係数を補正する方法"],
+    answer: 1,
+    exp: "Bonferroni補正はα（有意水準）を検定回数で割ります。例：3回検定するなら0.05÷3≈0.017が新たな有意水準になります。"
+  },
+  {
+    q: "要因計画とは何か。",
+    choices: ["1つの独立変数を操作する実験","複数の独立変数を組み合わせた実験計画","参加者を無作為に配置する方法","標本を選ぶ方法"],
+    answer: 1,
+    exp: "要因計画は2つ以上の独立変数（要因）を組み合わせた実験計画です。交互作用効果（要因の組み合わせによる効果）を調べられます。"
+  },
+  {
+    q: "交互作用とは何か。",
+    choices: ["2変数の相関","ある要因の効果が別の要因の水準によって異なること","主効果の合計","平均の差"],
+    answer: 1,
+    exp: "交互作用は「AとBの組み合わせによって効果が変わる」現象です。例：ある薬は男性には効くが女性には効かない場合などです。"
+  },
+  {
+    q: "内的妥当性とは何か。",
+    choices: ["結果を外部に一般化できるか","測定が正確か","変数間の因果関係が正しく推論できるか","倫理的に適切か"],
+    answer: 2,
+    exp: "内的妥当性は「観察された効果が本当に独立変数のせいか」という問いです。交絡変数の統制により高まります。"
+  },
+  {
+    q: "外的妥当性とは何か。",
+    choices: ["測定ツールの精度","結果を他の状況・集団に一般化できるか","因果推論の正確さ","倫理審査の通過"],
+    answer: 1,
+    exp: "外的妥当性は研究結果の一般化可能性です。大学生だけの実験結果を全人類に一般化できるか？という問いが典型例です。"
+  },
+  {
+    q: "信頼性（reliability）とは何か。",
+    choices: ["測りたいものを測れているか","繰り返し測定したとき同じ結果が得られるか","倫理的に適切か","統計的に有意か"],
+    answer: 1,
+    exp: "信頼性は測定の一貫性・安定性です。何度測っても同じ結果が出ることを指します。「再現性」と覚えておきましょう。"
+  },
+  {
+    q: "妥当性（validity）とは何か。",
+    choices: ["繰り返し同じ結果が出るか","測りたいものを正しく測れているか","サンプルサイズが十分か","正規分布に従うか"],
+    answer: 1,
+    exp: "妥当性は「本当に測りたいものを測れているか」です。身長計で体重を測っても信頼性はあっても妥当性はありません。"
+  },
+  {
+    q: "ランダム割り付け（無作為化）の目的は何か。",
+    choices: ["サンプルを増やす","交絡変数を群間で均等にする","測定誤差をなくす","正規分布を確保する"],
+    answer: 1,
+    exp: "ランダム割り付けにより、交絡変数（年齢・性別・重症度など）が各群でほぼ同等になります。これにより因果推論の妥当性が高まります。"
+  },
+  {
+    q: "プラセボ効果とは何か。",
+    choices: ["薬の副作用","本物の治療がないのに効果があると感じる現象","ランダム誤差","第2種の誤り"],
+    answer: 1,
+    exp: "プラセボ効果は「治療を受けた」という信念だけで症状が改善する現象です。これを統制するため二重盲検法が用いられます。"
+  },
+  {
+    q: "二重盲検法（double-blind）とは何か。",
+    choices: ["参加者のみが条件を知らない","参加者と実験者の両方が条件を知らない","実験者のみが条件を知らない","統計家が条件を知らない"],
+    answer: 1,
+    exp: "二重盲検法は参加者も実験者も「本物か偽物か」を知らない状態で実施します。バイアスを最小化できます。"
+  },
+  {
+    q: "測定の4尺度水準を順番に正しく並べたのはどれか。",
+    choices: ["名義→比率→順序→間隔","名義→順序→間隔→比率","順序→名義→比率→間隔","間隔→名義→順序→比率"],
+    answer: 1,
+    exp: "正しい順番は「名義→順序→間隔→比率」です。情報量が少ない順から多い順に並んでいます。比率尺度が最も情報量が多い（絶対ゼロ点あり）。"
+  },
+  {
+    q: "散布図（scatterplot）は何を確認するために使うか。",
+    choices: ["平均の差","2変数の関係（相関）","度数分布","信頼区間"],
+    answer: 1,
+    exp: "散布図は2変数の関係を視覚的に確認するために使います。相関分析の前に散布図を見て、外れ値や非線形関係を確認することが重要です。"
+  },
+  {
+    q: "ヒストグラムは何を表すか。",
+    choices: ["2変数の関係","データの度数分布","時系列変化","平均値の比較"],
+    answer: 1,
+    exp: "ヒストグラムは1つの変数の分布（どの値がどのくらいの頻度で現れるか）を表します。正規分布かどうかを視覚的に確認できます。"
+  },
+  {
+    q: "標準誤差（SE）とは何か。",
+    choices: ["個々のデータのばらつき","標本平均のばらつき","最大値と最小値の差","第1種誤りの確率"],
+    answer: 1,
+    exp: "標準誤差は「標本平均がどのくらいばらつくか」を示します。サンプルサイズが大きいほど小さくなります。SE=標準偏差÷√nです。"
+  },
+  {
+    q: "反復測定ANOVAとはどんな分析か。",
+    choices: ["異なる参加者の複数群を比較","同一参加者の複数条件・時点を比較","2変数の相関を検定する","カテゴリデータを分析する"],
+    answer: 1,
+    exp: "反復測定ANOVAは同一参加者を複数回測定するデザインに使います。介入前・中・後の行動頻度を比較する場合などに使用します。"
+  },
+  {
+    q: "メタ分析とは何か。",
+    choices: ["1つの大規模実験","複数の研究結果を統合して分析する手法","質問紙法の一種","観察研究の方法"],
+    answer: 1,
+    exp: "メタ分析は複数の研究結果を統計的に統合し、より大きな標本での効果量や一貫性を推定します。最も信頼度の高いエビデンスとされます。"
+  },
+  {
+    q: "外れ値（outlier）の対処として適切でないのはどれか。",
+    choices: ["中央値を使う","外れ値を確認して原因を調べる","データ変換（対数変換など）","何も確認せず削除する"],
+    answer: 3,
+    exp: "外れ値を何も確認せず削除することは不適切です。まず原因を確認し（入力ミスか？本物のデータか？）、理由を記録した上で判断します。"
+  },
+  {
+    q: "記述統計と推測統計の違いは何か。",
+    choices: ["記述統計は予測、推測統計は要約","記述統計はデータ要約、推測統計は母集団への推論","記述統計は大規模、推測統計は小規模","記述統計は計算不要"],
+    answer: 1,
+    exp: "記述統計は手元のデータを要約します（平均・SD等）。推測統計は標本から母集団を推測・検定します。まず記述統計で概要を把握するのが基本手順です。"
+  },
+  {
+    q: "ABA研究でシングルケースデザインをよく使う理由はどれか。",
+    choices: ["実施が簡単だから","少人数でも個人への介入効果を厳密に評価できるから","統計が不要だから","グループ比較に向いているから"],
+    answer: 1,
+    exp: "シングルケースデザイン（ABAB法等）は個人内比較で介入効果を検証します。ABAでは1人ひとりへの効果を厳密に評価するため広く用いられます。"
+  }
+];
+
+let current = 0;
+let score = 0;
+let answered = false;
+
+function startQuiz() {
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('quizArea').classList.remove('hidden');
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = questions[current];
+  const total = questions.length;
+  answered = false;
+
+  document.getElementById('qLabel').textContent = `問題 ${current + 1} / ${total}`;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('headerScore').textContent = `${score} / ${current}`;
+  document.getElementById('progressBar').style.width = `${(current / total) * 100}%`;
+  document.getElementById('progressText').textContent = `${current} / ${total} 問完了`;
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  const labels = ['A', 'B', 'C', 'D'];
+  q.choices.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-label">${labels[i]}</span><span>${c}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    choicesEl.appendChild(btn);
+  });
+
+  document.getElementById('explanation').classList.remove('show');
+  document.getElementById('btnNext').classList.remove('show');
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+
+  const q = questions[current];
+  const btns = document.querySelectorAll('.choice-btn');
+
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.answer) {
+      btn.classList.add('correct');
+    } else if (i === idx && idx !== q.answer) {
+      btn.classList.add('wrong');
+    } else {
+      btn.classList.add('dimmed');
+    }
+  });
+
+  if (idx === q.answer) score++;
+
+  document.getElementById('expText').textContent = q.exp;
+  document.getElementById('explanation').classList.add('show');
+
+  const btnNext = document.getElementById('btnNext');
+  btnNext.classList.add('show');
+  btnNext.textContent = current + 1 < questions.length ? '次の問題 →' : '結果を見る';
+}
+
+function nextQuestion() {
+  current++;
+  if (current < questions.length) {
+    showQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  document.getElementById('quizArea').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('hidden');
+
+  const total = questions.length;
+  const pct = Math.round((score / total) * 100);
+
+  document.getElementById('resultScoreNum').textContent = score;
+  document.getElementById('resultScoreNum').nextElementSibling.textContent = `/ ${total}点`;
+  document.getElementById('correctCount').textContent = score;
+  document.getElementById('wrongCount').textContent = total - score;
+  document.getElementById('percentNum').textContent = pct + '%';
+
+  document.getElementById('headerScore').textContent = `${score} / ${total}`;
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('progressText').textContent = `全${total}問完了`;
+
+  let msg, sub;
+  if (pct >= 90) { msg = '優秀！合格ライン突破！'; sub = '試験本番も自信を持って臨めます。'; }
+  else if (pct >= 70) { msg = 'あと一歩！'; sub = '苦手な分野を重点的に復習しましょう。'; }
+  else if (pct >= 50) { msg = 'もう少し頑張ろう！'; sub = '基礎概念の確認から始めましょう。'; }
+  else { msg = '再チャレンジしよう！'; sub = '解説をよく読んで、もう一度試してみてください。'; }
+
+  document.getElementById('resultMessage').textContent = msg;
+  document.getElementById('resultSub').textContent = sub;
+}
+
+function retryQuiz() {
+  current = 0;
+  score = 0;
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('quizArea').classList.remove('hidden');
+  showQuestion();
+}
+</script>
+</body>
+</html>
