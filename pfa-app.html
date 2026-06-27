@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PFA 作成アプリ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  background: #f0f4f3;
+  color: #333;
+  min-height: 100vh;
+}
+
+/* HEADER */
+header {
+  background: #4F7F8F;
+  color: white;
+  padding: 14px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+header h1 { font-size: 15px; font-weight: 700; }
+
+.step-indicator {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  transition: background 0.3s;
+}
+
+.step-dot.active { background: #E8A164; }
+.step-dot.done { background: rgba(255,255,255,0.7); }
+
+/* MAIN */
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+/* SECTION CARDS */
+.screen { display: none; }
+.screen.active { display: block; }
+
+.screen-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4F7F8F;
+  margin-bottom: 4px;
+}
+
+.screen-sub {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4F7F8F;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E7EEEC;
+  letter-spacing: 0.03em;
+}
+
+/* FORM ELEMENTS */
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  margin-bottom: 5px;
+  margin-top: 12px;
+}
+
+label:first-child { margin-top: 0; }
+
+input[type="text"],
+input[type="date"],
+textarea,
+select {
+  width: 100%;
+  border: 1.5px solid #dde6e4;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+  background: #f8faf9;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #4F7F8F;
+  background: white;
+}
+
+textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* BRANCH CARDS */
+.branch-card {
+  background: #f8faf9;
+  border: 1.5px solid #E7EEEC;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.branch-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #E8A164;
+  margin-bottom: 10px;
+}
+
+/* BUTTONS */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #4F7F8F;
+  color: white;
+}
+
+.btn-primary:hover { background: #3d6570; }
+
+.btn-secondary {
+  background: #E7EEEC;
+  color: #4F7F8F;
+}
+
+.btn-secondary:hover { background: #d5e2de; }
+
+.btn-orange {
+  background: #E8A164;
+  color: white;
+}
+
+.btn-orange:hover { background: #d4894e; }
+
+/* CHECKLIST */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8faf9;
+  border: 1.5px solid #E7EEEC;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.check-item:hover { border-color: #4F7F8F; }
+.check-item.checked { background: #e6f4ea; border-color: #4caf50; }
+
+.check-box {
+  width: 18px; height: 18px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: white;
+  margin-top: 1px;
+}
+
+.check-item.checked .check-box {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.check-text { font-size: 13px; line-height: 1.5; }
+
+/* PROGRESS BAR */
+.prog-wrap {
+  background: #E7EEEC;
+  border-radius: 4px;
+  height: 4px;
+  margin-top: 8px;
+}
+
+.prog-bar {
+  background: #E8A164;
+  height: 4px;
+  border-radius: 4px;
+  transition: width 0.4s;
+}
+
+/* START SCREEN */
+.start-hero {
+  text-align: center;
+  padding: 30px 20px 20px;
+}
+
+.start-hero h2 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #4F7F8F;
+  margin-bottom: 8px;
+}
+
+.start-hero p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.flow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.flow-step {
+  background: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.flow-num {
+  width: 32px; height: 32px;
+  background: #4F7F8F;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.flow-info strong { font-size: 14px; display: block; }
+.flow-info span { font-size: 12px; color: #888; }
+
+/* RESULT / PREVIEW */
+.preview-section {
+  background: #f8faf9;
+  border: 1.5px solid #E7EEEC;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.preview-section h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4F7F8F;
+  margin-bottom: 8px;
+}
+
+.preview-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.preview-key {
+  color: #888;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.preview-val { color: #333; }
+
+/* TABS */
+.tab-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.tab-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #dde6e4;
+  background: white;
+  font-size: 13px;
+  font-weight: 700;
+  color: #888;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: #4F7F8F;
+  color: white;
+  border-color: #4F7F8F;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.tip-box {
+  background: #E7EEEC;
+  border-left: 3px solid #4F7F8F;
+  border-radius: 0 8px 8px 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #444;
+  margin-bottom: 14px;
+}
+
+.tip-box strong { color: #4F7F8F; }
+
+.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>🧩 PFA 作成アプリ</h1>
+    <div class="step-indicator">
+      <div class="step-dot" id="dot0"></div>
+      <div class="step-dot" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
+    </div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+</header>
+
+<div class="main">
+
+<!-- ===== SCREEN 0: START ===== -->
+<div class="screen active" id="screen0">
+  <div class="start-hero">
+    <h2>PFA 作成アプリ</h2>
+    <p>Practical Functional Assessment（実践的機能的アセスメント）を<br>ステップごとに作成できます。</p>
+  </div>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-info">
+        <strong>面接フォーム</strong>
+        <span>基本情報・問題行動・EO・強化子を記録</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-info">
+        <strong>ブランチ設計</strong>
+        <span>3つの文脈に適切な行動連鎖を設計</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-info">
+        <strong>IISCA設計</strong>
+        <span>機能分析の設計・チェックリスト</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-info">
+        <strong>振り返り・まとめ</strong>
+        <span>実施後の確認とPDF出力</span>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" style="width:100%" onclick="goTo(1)">作成を始める →</button>
+</div>
+
+<!-- ===== SCREEN 1: 面接フォーム ===== -->
+<div class="screen" id="screen1">
+  <div class="screen-title">STEP 1 ｜ 面接フォーム</div>
+  <div class="screen-sub">面接情報を記録します。全項目必須ではありません。</div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('t1','tab1a')">基本情報</button>
+    <button class="tab-btn" onclick="switchTab('t1','tab1b')">問題行動</button>
+    <button class="tab-btn" onclick="switchTab('t1','tab1c')">EO・強化子</button>
+  </div>
+
+  <!-- TAB 1A -->
+  <div class="tab-content active" id="tab1a">
+    <div class="card">
+      <div class="card-title">面接基本情報</div>
+      <div class="row2">
+        <div>
+          <label>面接日</label>
+          <input type="date" id="interviewDate">
+        </div>
+        <div>
+          <label>面接者</label>
+          <input type="text" id="interviewer" placeholder="神庭T">
+        </div>
+      </div>
+      <label>対象児・対象者（仮名）</label>
+      <input type="text" id="clientName" placeholder="例：A くん">
+      <label>回答者と関係</label>
+      <input type="text" id="respondent" placeholder="例：母・担任T">
+    </div>
+
+    <div class="card">
+      <div class="card-title">背景情報</div>
+      <div class="row2">
+        <div>
+          <label>生年月日</label>
+          <input type="date" id="dob">
+        </div>
+        <div>
+          <label>現在年齢</label>
+          <input type="text" id="age" placeholder="例：6歳3ヶ月">
+        </div>
+      </div>
+      <label>言語能力</label>
+      <textarea id="language" placeholder="例：2〜3語文で話せる。要求語はあるが、質問応答は難しい。"></textarea>
+      <label>好きな遊び・余暇活動</label>
+      <textarea id="play" placeholder="例：ブロック、電車、iPad動画、ぬいぐるみ"></textarea>
+      <label>その他の好み・強みなど</label>
+      <textarea id="preferences" placeholder="例：音楽が好き。歌を聞くと落ち着く。"></textarea>
+    </div>
+  </div>
+
+  <!-- TAB 1B -->
+  <div class="tab-content" id="tab1b">
+    <div class="tip-box"><strong>ポイント：</strong>まず最近起きた重い問題行動エピソードを2件、具体的に聞き取ります。そこから反応クラス・EO・強化子を確認していきます。</div>
+
+    <div class="card">
+      <div class="card-title">問題行動の定義</div>
+      <label>問題行動（実際にどう見えるか）</label>
+      <textarea id="pb" placeholder="例：頭を壁に打ち付ける、他者を叩く、物を投げる、大声で泣き叫ぶ"></textarea>
+      <label>最も懸念の大きい問題行動（上位3つ）</label>
+      <textarea id="pbTop3" placeholder="例：①頭突き ②叩き ③泣き叫び"></textarea>
+      <label>R1（重度問題行動）の定義</label>
+      <textarea id="r1def" placeholder="例：頭を壁・床に3回以上打ち付ける。他者の皮膚が赤くなるほど叩く。"></textarea>
+      <label>R2（前兆・軽度問題行動）の定義</label>
+      <textarea id="r2def" placeholder="例：顔をしかめる、手を振る、声を上げる（泣き叫びの前兆）"></textarea>
+      <label>強度・怪我リスク</label>
+      <textarea id="severity" placeholder="例：週2〜3回程度。本人の額に赤みが残ることあり。他者への打撲歴あり。"></textarea>
+      <label>連続性・前兆関係</label>
+      <textarea id="chain" placeholder="例：声を上げる→頭突き→叩き、という連鎖が多い。"></textarea>
+    </div>
+  </div>
+
+  <!-- TAB 1C -->
+  <div class="tab-content" id="tab1c">
+    <div class="card">
+      <div class="card-title">確立操作（EO）</div>
+      <label>起こりやすい条件・場面・活動</label>
+      <textarea id="eoSituation" placeholder="例：課題中（特に書字・プリント）、待機場面、活動の切り替え時"></textarea>
+      <label>ルーティン変更・中断・思い通りにならない時</label>
+      <textarea id="eoRoutine" placeholder="例：タブレットを取り上げると必ず起きる。予告なしの終了に弱い。"></textarea>
+      <label>EOに必要な物品</label>
+      <input type="text" id="eoMaterials" placeholder="例：プリント課題、タブレット、ブロック">
+    </div>
+
+    <div class="card">
+      <div class="card-title">強化子・周囲の反応</div>
+      <label>周囲は問題行動にどう反応するか</label>
+      <textarea id="reaction" placeholder="例：止めに入る、抱きしめる、タブレットを返す、「やめて」と言う"></textarea>
+      <label>どう落ち着かせるか</label>
+      <textarea id="calm" placeholder="例：好きな動画を見せる、静かな場所に連れて行く、一対一になる"></textarea>
+      <label>この行動で何を伝えようとしていると思うか</label>
+      <textarea id="function" placeholder="例：「これをやりたくない」「もっとかまってほしい」「やめてほしい」"></textarea>
+      <label>強化子と具体的な提供のされ方</label>
+      <textarea id="reinforcer" placeholder="例：タブレット動画（問題行動後に返すことが多い）、大人の注目・身体接触"></textarea>
+      <label>強化に必要な物品</label>
+      <input type="text" id="srMaterials" placeholder="例：iPad、ぬいぐるみ、お気に入りの絵本">
+    </div>
+
+    <div class="card">
+      <div class="card-title">目標行動・スキル</div>
+      <label>問題行動がなければ身につけたいスキル</label>
+      <textarea id="goalSkills" placeholder="例：「待って」カードを使う、要求語を言う、課題に3分座る"></textarea>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(0)">← 戻る</button>
+    <button class="btn btn-primary" onclick="goTo(2)">次へ：ブランチ設計 →</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 2: ブランチ設計 ===== -->
+<div class="screen" id="screen2">
+  <div class="screen-title">STEP 2 ｜ ブランチ設計</div>
+  <div class="screen-sub">面接情報から3つのブランチ（文脈に適切な行動連鎖）を設計します。</div>
+
+  <div class="tip-box">
+    <strong>2つのC：</strong>Learnerにとって <strong>Challenging</strong>（難しい場面）で、かつ練習で <strong>Convenient</strong>（再現しやすい）こと。食事・排泄・就寝中の問題行動は通常対象外。
+  </div>
+
+  <div class="card">
+    <div class="card-title">ブランチ A</div>
+    <div class="branch-card">
+      <div class="branch-label">Branch A</div>
+      <label>問題行動を喚起しやすい状況</label>
+      <textarea id="branchA_eo" placeholder="例：プリント課題を提示されたとき"></textarea>
+      <label>文脈に適切な行動連鎖（CAB）</label>
+      <textarea id="branchA_cab" placeholder="例：①着席 → ②「やりたくない」カードを出す → ③1問だけやる → ④「終わった」と言う → ⑤タブレットタイム"></textarea>
+      <label>ブランチ名</label>
+      <input type="text" id="branchA_name" placeholder="例：課題拒否ブランチ">
+      <label>必要物品</label>
+      <input type="text" id="branchA_materials" placeholder="例：プリント、コミュニケーションカード、タイマー">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ブランチ B</div>
+    <div class="branch-card">
+      <div class="branch-label">Branch B</div>
+      <label>問題行動を喚起しやすい状況</label>
+      <textarea id="branchB_eo" placeholder="例：タブレットを取り上げるとき"></textarea>
+      <label>文脈に適切な行動連鎖（CAB）</label>
+      <textarea id="branchB_cab" placeholder="例：①タイマー提示 → ②「あと1分」の予告 → ③「終わり」と言われる → ④カードで「もう少し」と要求 → ⑤30秒延長 → ⑥終了"></textarea>
+      <label>ブランチ名</label>
+      <input type="text" id="branchB_name" placeholder="例：活動終了ブランチ">
+      <label>必要物品</label>
+      <input type="text" id="branchB_materials" placeholder="例：タイマー、iPad、終わりカード">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ブランチ C</div>
+    <div class="branch-card">
+      <div class="branch-label">Branch C</div>
+      <label>問題行動を喚起しやすい状況</label>
+      <textarea id="branchC_eo" placeholder="例：待機場面（先生が他の子にかかわっているとき）"></textarea>
+      <label>文脈に適切な行動連鎖（CAB）</label>
+      <textarea id="branchC_cab" placeholder="例：①一人で待つ（タイマー30秒） → ②「先生」と呼ぶ → ③先生が応答 → ④要求を言語化 → ⑤かなえられる"></textarea>
+      <label>ブランチ名</label>
+      <input type="text" id="branchC_name" placeholder="例：待機・注目要求ブランチ">
+      <label>必要物品</label>
+      <input type="text" id="branchC_materials" placeholder="例：タイマー、「先生」カード、好きな玩具">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(1)">← 戻る</button>
+    <button class="btn btn-primary" onclick="goTo(3)">次へ：IISCA設計 →</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 3: IISCA設計 ===== -->
+<div class="screen" id="screen3">
+  <div class="screen-title">STEP 3 ｜ IISCA設計</div>
+  <div class="screen-sub">機能分析（IISCA）の設計を行います。</div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('t3','tab3a')">設計フォーム</button>
+    <button class="tab-btn" onclick="switchTab('t3','tab3b')">整合性チェック</button>
+    <button class="tab-btn" onclick="switchTab('t3','tab3c')">実施ポイント</button>
+  </div>
+
+  <!-- TAB 3A: 設計フォーム -->
+  <div class="tab-content active" id="tab3a">
+    <div class="card">
+      <div class="card-title">基本情報</div>
+      <label>実施者（誰がなぜ担当するか）</label>
+      <textarea id="iisca_implementer" placeholder="例：神庭T。本児との関係性が最も深く、問題行動の文脈を熟知しているため。"></textarea>
+      <label>同席する養育者・支援者</label>
+      <input type="text" id="iisca_attendees" placeholder="例：母、担任T">
+      <label>実施場所（なぜそこが適切か）</label>
+      <textarea id="iisca_place" placeholder="例：個別指導室。物品を調整しやすく、他刺激が少ない。"></textarea>
+      <label>本人の言語能力（再確認）</label>
+      <input type="text" id="iisca_lang" placeholder="例：2〜3語文。単語要求あり。">
+    </div>
+
+    <div class="card">
+      <div class="card-title">SR文脈（強化文脈）の設計</div>
+      <label>強化文脈に置く物品・設備</label>
+      <textarea id="sr_materials" placeholder="例：iPad（動画アプリ）、ぬいぐるみ、ブロック、好きな絵本"></textarea>
+      <label>強化中のかかわり方</label>
+      <textarea id="sr_interaction" placeholder="例：本人の主導に従う。要求には即座に応じる。指示・質問は出さない。"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-title">EO文脈の設計</div>
+      <label>EOをどう段階的に進めるか</label>
+      <textarea id="eo_progression" placeholder="例：①「これやってみよう」と言いながらプリントを提示 → ②待つ（5秒） → ③プロンプト（言う→見せる→手伝う）"></textarea>
+      <label>EO文脈で使う物品・設備</label>
+      <input type="text" id="eo_materials" placeholder="例：プリント課題3枚、鉛筆">
+    </div>
+
+    <div class="card">
+      <div class="card-title">問題行動への対応</div>
+      <label>EO文脈でPBが起きたときの対応</label>
+      <textarea id="eo_pbresponse" placeholder="例：R1またはR2の最初の反応で即座にSR文脈に戻す。課題を片付け、好みの物を提供する。"></textarea>
+      <label>SR文脈でPBが起きたときの対応</label>
+      <textarea id="sr_pbresponse" placeholder="例：要求に応じつつ、HREへの移行を待つ。指示や訂正はしない。"></textarea>
+      <label>離席時の対応</label>
+      <textarea id="leave_response" placeholder="例：静かに追従。再着席を強要しない。好みの物を持って自然に誘導。"></textarea>
+      <label>安全上の追加配慮</label>
+      <textarea id="safety" placeholder="例：頭突きに備えクッションを壁に配置。緊急時は即中止・保護者に連絡。"></textarea>
+    </div>
+  </div>
+
+  <!-- TAB 3B: チェックリスト -->
+  <div class="tab-content" id="tab3b">
+    <div class="card">
+      <div class="card-title">SR文脈チェックリスト</div>
+      <div class="checklist" id="srChecklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">好みの物や活動を十分に用意した</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">中央で待機し、本人に向き、社会的働きかけには応じた</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">合理的な要求はかなえた</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">HREが30秒以上続くまでSRを維持した</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">課題提示・質問攻め・指示を出さなかった</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">不合理要求拒否後に言いくるめなかった</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">EO文脈チェックリスト</div>
+      <div class="checklist" id="eoChecklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">計画どおり段階的にEOを進めた</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">指示は短く明確に出した</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">3段階プロンプト（言う→見せる→手伝う）を使った</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">最初のR1またはR2で即座にSRへ戻した</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">指示を質問形にしなかった</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">交渉・説得・長い説明をしなかった</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box">✓</div>
+          <div class="check-text">要求と無関係な物へのアクセスを許さなかった</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3C: 実施ポイント -->
+  <div class="tab-content" id="tab3c">
+    <div class="card">
+      <div class="card-title">IISCA実施の9つのポイント</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="tip-box" style="margin-bottom:0"><strong>①</strong> 物品・机・マットでSR文脈とEO文脈を明確に分ける。最初は強化子を非随伴的に継続提供する。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>②</strong> 到着直後からSR文脈を経験させる。HREになるまでデータ収集を始めない。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>③</strong> 本人をよく知る養育者・支援者に立ち会ってもらい、HREの判断や不安を確認する。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>④</strong> open-door analysis を原則にし、誰でもいつでも中止を提案できるようにする。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>⑤</strong> 全セッションを録画する。実施者とは別の人がライブで記録する。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>⑥</strong> 最初のEOは、少なくとも5分間連続してHREが見られた後に提示する。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>⑦</strong> 問題行動反応クラスの最初の反応が見られたら、ただちに想定強化子を明確に返す。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>⑧</strong> 次のEOは、少なくとも30秒間連続してHREが戻った後に行う。</div>
+        <div class="tip-box" style="margin-bottom:0"><strong>⑨</strong> 3〜5試行連続でPBがオン→オフになり、10秒以内にHREへ戻るなら分析終了を検討する。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(2)">← 戻る</button>
+    <button class="btn btn-primary" onclick="goTo(4)">次へ：振り返り →</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 4: 振り返り・まとめ ===== -->
+<div class="screen" id="screen4">
+  <div class="screen-title">STEP 4 ｜ 振り返り・まとめ</div>
+  <div class="screen-sub">IISCA実施後の振り返りを記録します。</div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('t4','tab4a')">振り返り</button>
+    <button class="tab-btn" onclick="switchTab('t4','tab4b')">まとめ確認</button>
+  </div>
+
+  <!-- TAB 4A -->
+  <div class="tab-content active" id="tab4a">
+    <div class="card">
+      <div class="card-title">IISCA実施後の振り返り</div>
+      <label>この分析は安全だったか</label>
+      <textarea id="ref_safety" placeholder="例：安全に実施できた。R1が1回出たが即SR移行で収束した。"></textarea>
+      <label>第三者に見せられる実施だったか</label>
+      <textarea id="ref_tele" placeholder="例：はい。保護者も同席しており、説明しながら実施できた。"></textarea>
+      <label>ラポールは広がったか・縮んだか</label>
+      <textarea id="ref_rapport" placeholder="例：SR時間に笑顔が増え、アイコンタクトも増えた。広がった印象。"></textarea>
+      <label>本人は長い時間HREでいられたか</label>
+      <textarea id="ref_hre" placeholder="例：SR文脈では5〜7分間HRE維持できた。"></textarea>
+      <label>EO進行中に問題行動は喚起されたか</label>
+      <textarea id="ref_eo" placeholder="例：はい。プリント提示3秒後にR2（声を上げる）が出現した。"></textarea>
+      <label>強化子を返すことで問題行動はオフになったか</label>
+      <textarea id="ref_sr" placeholder="例：はい。iPadを渡すと5秒以内に泣き止んだ。"></textarea>
+      <label>10秒以内にHREへ戻れたか</label>
+      <textarea id="ref_10sec" placeholder="例：はい。3試行とも8秒以内に戻れた。"></textarea>
+      <label>分析中に分かった好み・能力・耐性</label>
+      <textarea id="ref_strengths" placeholder="例：音楽動画への集中力が高い。ブロックは長時間取り組める。"></textarea>
+      <label>問題行動を喚起していた条件</label>
+      <textarea id="ref_eo_result" placeholder="例：プリント課題の提示、タブレット取り上げ、の2条件で確実に喚起された。"></textarea>
+      <label>問題行動を維持していたと思われる強化子</label>
+      <textarea id="ref_sr_result" placeholder="例：タブレット（回避＋アクセス）と大人の注目・身体接触（注目）が統合強化として機能していると考えられる。"></textarea>
+    </div>
+  </div>
+
+  <!-- TAB 4B: まとめ -->
+  <div class="tab-content" id="tab4b">
+    <div id="summaryArea">
+      <div class="preview-section">
+        <h3>📋 面接情報</h3>
+        <div class="preview-row"><span class="preview-key">対象児</span><span class="preview-val" id="sum_client">—</span></div>
+        <div class="preview-row"><span class="preview-key">面接日</span><span class="preview-val" id="sum_date">—</span></div>
+        <div class="preview-row"><span class="preview-key">面接者</span><span class="preview-val" id="sum_interviewer">—</span></div>
+        <div class="preview-row"><span class="preview-key">言語能力</span><span class="preview-val" id="sum_lang">—</span></div>
+        <div class="preview-row"><span class="preview-key">主要問題行動</span><span class="preview-val" id="sum_pb">—</span></div>
+        <div class="preview-row"><span class="preview-key">R1定義</span><span class="preview-val" id="sum_r1">—</span></div>
+        <div class="preview-row"><span class="preview-key">R2定義</span><span class="preview-val" id="sum_r2">—</span></div>
+        <div class="preview-row"><span class="preview-key">EO状況</span><span class="preview-val" id="sum_eo">—</span></div>
+        <div class="preview-row"><span class="preview-key">強化子</span><span class="preview-val" id="sum_sr">—</span></div>
+      </div>
+
+      <div class="preview-section">
+        <h3>🌿 ブランチ設計</h3>
+        <div class="preview-row"><span class="preview-key">Branch A</span><span class="preview-val" id="sum_branchA">—</span></div>
+        <div class="preview-row"><span class="preview-key">Branch B</span><span class="preview-val" id="sum_branchB">—</span></div>
+        <div class="preview-row"><span class="preview-key">Branch C</span><span class="preview-val" id="sum_branchC">—</span></div>
+      </div>
+
+      <div class="preview-section">
+        <h3>🔬 IISCA設計</h3>
+        <div class="preview-row"><span class="preview-key">実施者</span><span class="preview-val" id="sum_implementer">—</span></div>
+        <div class="preview-row"><span class="preview-key">実施場所</span><span class="preview-val" id="sum_place">—</span></div>
+        <div class="preview-row"><span class="preview-key">SR物品</span><span class="preview-val" id="sum_srmat">—</span></div>
+        <div class="preview-row"><span class="preview-key">EO物品</span><span class="preview-val" id="sum_eomat">—</span></div>
+      </div>
+
+      <div class="preview-section">
+        <h3>✅ 振り返り結果</h3>
+        <div class="preview-row"><span class="preview-key">EO条件</span><span class="preview-val" id="sum_ref_eo">—</span></div>
+        <div class="preview-row"><span class="preview-key">推定強化子</span><span class="preview-val" id="sum_ref_sr">—</span></div>
+        <div class="preview-row"><span class="preview-key">ラポール</span><span class="preview-val" id="sum_ref_rapport">—</span></div>
+      </div>
+    </div>
+
+    <button class="btn btn-orange" style="width:100%;margin-top:4px" onclick="printSummary()">🖨 印刷 / PDF保存</button>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(3)">← 戻る</button>
+    <button class="btn btn-primary" onclick="updateSummary();switchTab('t4','tab4b')">まとめを確認 →</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+let currentScreen = 0;
+const totalScreens = 5;
+
+// タブ管理
+const tabGroups = {};
+
+function switchTab(group, id) {
+  const tabs = document.querySelectorAll(`[onclick*="'${group}'"]`);
+  tabs.forEach(t => t.classList.remove('active'));
+  const contents = document.querySelectorAll(`[id^="tab${group.slice(1)}"]`);
+  contents.forEach(c => c.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function goTo(n) {
+  document.getElementById(`screen${currentScreen}`).classList.remove('active');
+  currentScreen = n;
+  document.getElementById(`screen${n}`).classList.add('active');
+  updateProgress();
+  window.scrollTo(0, 0);
+}
+
+function updateProgress() {
+  const pct = currentScreen === 0 ? 0 : (currentScreen / 4) * 100;
+  document.getElementById('progBar').style.width = pct + '%';
+  for (let i = 0; i < 5; i++) {
+    const dot = document.getElementById(`dot${i}`);
+    dot.classList.remove('active', 'done');
+    if (i === currentScreen) dot.classList.add('active');
+    else if (i < currentScreen) dot.classList.add('done');
+  }
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+}
+
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() || '—' : '—';
+}
+
+function updateSummary() {
+  document.getElementById('sum_client').textContent = val('clientName');
+  document.getElementById('sum_date').textContent = val('interviewDate');
+  document.getElementById('sum_interviewer').textContent = val('interviewer');
+  document.getElementById('sum_lang').textContent = val('language');
+  document.getElementById('sum_pb').textContent = val('pbTop3');
+  document.getElementById('sum_r1').textContent = val('r1def');
+  document.getElementById('sum_r2').textContent = val('r2def');
+  document.getElementById('sum_eo').textContent = val('eoSituation');
+  document.getElementById('sum_sr').textContent = val('reinforcer');
+
+  const bA = val('branchA_name') + '：' + val('branchA_eo');
+  const bB = val('branchB_name') + '：' + val('branchB_eo');
+  const bC = val('branchC_name') + '：' + val('branchC_eo');
+  document.getElementById('sum_branchA').textContent = bA;
+  document.getElementById('sum_branchB').textContent = bB;
+  document.getElementById('sum_branchC').textContent = bC;
+
+  document.getElementById('sum_implementer').textContent = val('iisca_implementer');
+  document.getElementById('sum_place').textContent = val('iisca_place');
+  document.getElementById('sum_srmat').textContent = val('sr_materials');
+  document.getElementById('sum_eomat').textContent = val('eo_materials');
+
+  document.getElementById('sum_ref_eo').textContent = val('ref_eo_result');
+  document.getElementById('sum_ref_sr').textContent = val('ref_sr_result');
+  document.getElementById('sum_ref_rapport').textContent = val('ref_rapport');
+}
+
+function printSummary() {
+  updateSummary();
+  window.print();
+}
+
+// 初期化
+updateProgress();
+</script>
+</body>
+</html>
