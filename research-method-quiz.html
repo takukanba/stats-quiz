@@ -1,0 +1,521 @@
+import { useState, useCallback } from "react";
+
+const SESSIONS = [
+  { id: 1, title: "心理学研究の基礎知識", keywords: "実証科学、概念、変数、妥当性と信頼性、相関と因果" },
+  { id: 2, title: "研究法概説", keywords: "実験法、調査法、観察法、面接法、検査法、介入研究法" },
+  { id: 3, title: "記述統計と推測統計", keywords: "尺度、基礎統計、推測統計、統計的仮説検定、ベイズ統計" },
+  { id: 4, title: "実験法１：実験法の基礎", keywords: "実験法、実験計画法、剰余変数の統制" },
+  { id: 5, title: "実験法２：心理学的測定法の基礎", keywords: "行動指標、生理指標、心理物理学的測定法" },
+  { id: 6, title: "調査法１：調査法の基礎", keywords: "調査法、サンプリング、心理尺度、構成概念、内容的妥当性" },
+  { id: 7, title: "調査法２：尺度作成の基礎と調査法の実際", keywords: "回答方法、調査票、信頼性、妥当性" },
+  { id: 8, title: "観察法１：観察データの測定", keywords: "行動観察、産物記録法、時間見本法" },
+  { id: 9, title: "観察法２：観察データの解析", keywords: "信頼性、妥当性、グラフ化、観察データの統計解析" },
+  { id: 10, title: "面接法１：臨床的面接法", keywords: "ラポール、マイクロカウンセリング、非言語的コミュニケーション、事例研究" },
+  { id: 11, title: "面接法２：調査的面接法", keywords: "構造化面接、半構造化面接、非構造化面接、トランスクリプト" },
+  { id: 12, title: "検査法", keywords: "知能検査、パーソナリティ検査、投影法、テストバッテリー" },
+  { id: 13, title: "介入研究法", keywords: "介入研究、ランダム化比較試験、一事例実験デザイン" },
+  { id: 14, title: "心理学研究の倫理１：基礎的研究の実施のために", keywords: "倫理審査、QRPs、再現可能性、オープンデータ" },
+  { id: 15, title: "心理学研究の倫理２：臨床的研究の実施のために", keywords: "研究倫理、臨床的研究、研究倫理委員会" },
+];
+
+const DIFFICULTY = [
+  { id: "basic", label: "基礎", desc: "定義・用語の確認" },
+  { id: "intermediate", label: "応用", desc: "概念の理解・比較" },
+  { id: "advanced", label: "難問", desc: "事例適用・深い理解" },
+];
+
+const buildPrompt = (session, difficulty) => {
+  const diffLabel = DIFFICULTY.find((d) => d.id === difficulty)?.label;
+  const diffDesc = DIFFICULTY.find((d) => d.id === difficulty)?.desc;
+  return `あなたは心理学研究法（研究方法論）の試験問題作成の専門家です。
+
+以下の条件で問題を1問作成してください：
+
+【対象トピック】第${session.id}回「${session.title}」
+【キーワード】${session.keywords}
+【難易度】${diffLabel}（${diffDesc}）
+【形式】4択問題（選択肢A〜D）
+
+重要な指示：
+- キーワードに含まれる概念・手法・用語から出題すること
+- 心理学研究法の試験に実際に出そうなリアルな問題にする（用語の定義、手法同士の比較、具体的な研究場面での適用判断など）
+- 選択肢は紛らわしいが、正しく理解していれば明確に正誤が分かるものにする
+- 日本語で書く
+
+解説については特に力を入れること：
+- 正解がなぜ正しいかを、定義や具体例を交えて丁寧に説明する
+- 他の3つの選択肢それぞれについて、なぜ誤りなのか（どこが違うのか、どんな場面なら正しくなるのか）を個別に説明する
+- 関連する用語や、この概念が他の研究法とどう違うかにも触れ、理解が深まるようにする
+- 解説全体で5〜8文程度、しっかりした分量にする
+
+必ず以下のJSON形式のみで返答してください（余分なテキスト・マークダウン不可）:
+{
+  "question": "問題文",
+  "choices": {
+    "A": "選択肢A",
+    "B": "選択肢B",
+    "C": "選択肢C",
+    "D": "選択肢D"
+  },
+  "answer": "正解（A/B/C/Dのいずれか1文字のみ）",
+  "explanation": "詳しい解説（正解の理由＋各誤答選択肢への個別言及を含む、5〜8文）"
+}`;
+};
+
+export default function App() {
+  const [screen, setScreen] = useState("home");
+  const [selectedSession, setSelectedSession] = useState(2);
+  const [selectedDifficulty, setSelectedDifficulty] = useState("basic");
+  const [question, setQuestion] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [chosen, setChosen] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [sessionScore, setSessionScore] = useState({ correct: 0, total: 0 });
+  const [error, setError] = useState(null);
+
+  const fetchQuestion = useCallback(async (sessionId, difficulty) => {
+    const sid = sessionId ?? selectedSession;
+    const diff = difficulty ?? selectedDifficulty;
+    const session = SESSIONS.find((s) => s.id === sid);
+    setLoading(true);
+    setQuestion(null);
+    setChosen(null);
+    setRevealed(false);
+    setError(null);
+    setScreen("quiz");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1400,
+          messages: [{ role: "user", content: buildPrompt(session, diff) }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.find((b) => b.type === "text")?.text || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      setQuestion(parsed);
+    } catch (e) {
+      setError("問題の生成に失敗しました。もう一度お試しください。");
+      setScreen("home");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedSession, selectedDifficulty]);
+
+  const handleChoice = (key) => {
+    if (revealed || loading) return;
+    setChosen(key);
+    setRevealed(true);
+    const isCorrect = key === question.answer;
+    setSessionScore((s) => ({
+      correct: s.correct + (isCorrect ? 1 : 0),
+      total: s.total + 1,
+    }));
+  };
+
+  const currentSession = SESSIONS.find((s) => s.id === selectedSession);
+  const pct = sessionScore.total > 0 ? Math.round((sessionScore.correct / sessionScore.total) * 100) : null;
+
+  // ── HOME ──
+  if (screen === "home") {
+    return (
+      <div style={s.page}>
+        <div style={s.card}>
+          <div style={s.headerRow}>
+            <span style={s.badge}>心理学研究法</span>
+            {pct !== null && (
+              <span style={{ ...s.scorePill, background: pct >= 70 ? "#e8f5ee" : "#fdecea", color: pct >= 70 ? "#1e7a4a" : "#c0392b" }}>
+                {sessionScore.correct}/{sessionScore.total} ({pct}%)
+              </span>
+            )}
+          </div>
+          <h1 style={s.title}>AI問題生成<br /><span style={s.titleAccent}>クイズ</span></h1>
+          <p style={s.subtitle}>回とレベルを選ぶだけ。毎回新しい問題と詳しい解説が出ます。</p>
+
+          <div style={s.sectionLabel}>回を選ぶ</div>
+          <div style={s.sessionList}>
+            {SESSIONS.map((session) => (
+              <button
+                key={session.id}
+                onClick={() => setSelectedSession(session.id)}
+                style={{
+                  ...s.sessionBtn,
+                  ...(selectedSession === session.id ? s.sessionBtnActive : {}),
+                }}
+              >
+                <span style={s.sessionNum}>{session.id}</span>
+                <span style={s.sessionTitle}>{session.title}</span>
+              </button>
+            ))}
+          </div>
+
+          <div style={s.sectionLabel}>難易度</div>
+          <div style={s.diffRow}>
+            {DIFFICULTY.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => setSelectedDifficulty(d.id)}
+                style={{
+                  ...s.diffBtn,
+                  ...(selectedDifficulty === d.id ? s.diffBtnActive : {}),
+                }}
+              >
+                <div style={s.diffLabel}>{d.label}</div>
+                <div style={s.diffDesc}>{d.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          <button onClick={() => fetchQuestion()} style={s.startBtn}>
+            第{selectedSession}回の問題を生成 →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── QUIZ ──
+  return (
+    <div style={s.page}>
+      <div style={s.card}>
+        <div style={s.quizTopRow}>
+          <button onClick={() => setScreen("home")} style={s.backBtn}>← 回選択</button>
+          {pct !== null && (
+            <span style={{ ...s.scorePill, background: pct >= 70 ? "#e8f5ee" : "#fdecea", color: pct >= 70 ? "#1e7a4a" : "#c0392b" }}>
+              ✅ {sessionScore.correct}/{sessionScore.total}
+            </span>
+          )}
+        </div>
+
+        <div style={s.sessionTag}>
+          第{selectedSession}回｜{currentSession?.title}｜
+          {DIFFICULTY.find((d) => d.id === selectedDifficulty)?.label}
+        </div>
+
+        {loading && (
+          <div style={s.loadingBox}>
+            <svg width="40" height="40" viewBox="0 0 40 40">
+              <circle cx="20" cy="20" r="16" fill="none" stroke="#e6e0d8" strokeWidth="3" />
+              <circle cx="20" cy="20" r="16" fill="none" stroke="#8C5A3C" strokeWidth="3"
+                strokeDasharray="60 40" strokeLinecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.9s" repeatCount="indefinite" />
+              </circle>
+            </svg>
+            <p style={s.loadingText}>AIが問題と解説を生成しています…</p>
+          </div>
+        )}
+
+        {!loading && question && (
+          <>
+            <p style={s.questionText}>{question.question}</p>
+            <div style={s.choicesCol}>
+              {["A", "B", "C", "D"].map((key) => {
+                let style = { ...s.choiceBtn };
+                if (revealed) {
+                  if (key === question.answer) {
+                    style = { ...style, background: "#eafaf1", borderColor: "#2ecc71", color: "#1a6a3a" };
+                  } else if (key === chosen) {
+                    style = { ...style, background: "#fdecea", borderColor: "#e74c3c", color: "#a93226" };
+                  } else {
+                    style = { ...style, opacity: 0.5 };
+                  }
+                }
+                return (
+                  <button key={key} onClick={() => handleChoice(key)} style={style}>
+                    <span style={s.choiceKey}>{key}</span>
+                    <span>{question.choices[key]}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {revealed && (
+              <>
+                <div style={{
+                  ...s.expBox,
+                  borderLeft: `4px solid ${chosen === question.answer ? "#2ecc71" : "#e74c3c"}`,
+                }}>
+                  <div style={s.expResult}>
+                    {chosen === question.answer ? "🎉 正解！" : `❌ 不正解（正解: ${question.answer}）`}
+                  </div>
+                  <p style={s.expText}>{question.explanation}</p>
+                </div>
+                <div style={s.nextRow}>
+                  <button onClick={() => fetchQuestion()} style={s.nextBtn}>
+                    もう1問 →
+                  </button>
+                  <button onClick={() => setScreen("home")} style={s.changeBtn}>
+                    回を変える
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {error && <p style={s.errorText}>{error}</p>}
+      </div>
+    </div>
+  );
+}
+
+const s = {
+  page: {
+    minHeight: "100vh",
+    background: "#EFEAE2",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    padding: "20px 12px 40px",
+    fontFamily: "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif",
+  },
+  card: {
+    background: "#fff",
+    borderRadius: 18,
+    padding: "24px 20px",
+    width: "100%",
+    maxWidth: 540,
+    boxShadow: "0 2px 20px rgba(80,60,40,0.10)",
+  },
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  badge: {
+    background: "#8C5A3C",
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    borderRadius: 5,
+    padding: "3px 9px",
+  },
+  scorePill: {
+    fontSize: 12,
+    fontWeight: 700,
+    borderRadius: 20,
+    padding: "3px 11px",
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 800,
+    color: "#2b231c",
+    margin: "0 0 6px",
+    lineHeight: 1.25,
+  },
+  titleAccent: { color: "#8C5A3C" },
+  subtitle: {
+    fontSize: 12,
+    color: "#888",
+    margin: "0 0 22px",
+    lineHeight: 1.6,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: 800,
+    color: "#aaa",
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  sessionList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 5,
+    marginBottom: 20,
+    maxHeight: 320,
+    overflowY: "auto",
+    borderRadius: 10,
+    border: "1px solid #ece5da",
+    padding: "4px",
+  },
+  sessionBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "9px 12px",
+    borderRadius: 8,
+    border: "1.5px solid transparent",
+    background: "transparent",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  sessionBtnActive: {
+    background: "#f7f1e9",
+    border: "1.5px solid #8C5A3C",
+  },
+  sessionNum: {
+    fontSize: 11,
+    fontWeight: 800,
+    color: "#8C5A3C",
+    minWidth: 22,
+    background: "#f0e4d8",
+    borderRadius: 4,
+    padding: "2px 5px",
+    textAlign: "center",
+  },
+  sessionTitle: {
+    fontSize: 13,
+    color: "#333",
+    fontWeight: 500,
+  },
+  diffRow: {
+    display: "flex",
+    gap: 8,
+    marginBottom: 22,
+  },
+  diffBtn: {
+    flex: 1,
+    padding: "10px 6px",
+    borderRadius: 10,
+    border: "1.5px solid #e3dccf",
+    background: "#fff",
+    cursor: "pointer",
+    textAlign: "center",
+  },
+  diffBtnActive: {
+    border: "2px solid #4F7F8F",
+    background: "#f4f9fa",
+  },
+  diffLabel: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#333",
+    marginBottom: 2,
+  },
+  diffDesc: {
+    fontSize: 10,
+    color: "#999",
+  },
+  startBtn: {
+    width: "100%",
+    padding: "14px",
+    background: "#8C5A3C",
+    color: "#fff",
+    border: "none",
+    borderRadius: 12,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  quizTopRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  backBtn: {
+    background: "none",
+    border: "none",
+    color: "#8C5A3C",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    padding: 0,
+  },
+  sessionTag: {
+    fontSize: 11,
+    color: "#888",
+    fontWeight: 600,
+    marginBottom: 18,
+    lineHeight: 1.5,
+  },
+  loadingBox: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "48px 0 40px",
+  },
+  loadingText: { color: "#999", fontSize: 13, marginTop: 12 },
+  questionText: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#2b231c",
+    lineHeight: 1.75,
+    marginBottom: 18,
+  },
+  choicesCol: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 9,
+    marginBottom: 18,
+  },
+  choiceBtn: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: "12px 14px",
+    borderRadius: 10,
+    border: "1.5px solid #e3dccf",
+    background: "#fff",
+    cursor: "pointer",
+    fontSize: 13,
+    lineHeight: 1.55,
+    textAlign: "left",
+    color: "#222",
+  },
+  choiceKey: {
+    fontWeight: 800,
+    fontSize: 13,
+    minWidth: 18,
+    color: "#8C5A3C",
+    flexShrink: 0,
+  },
+  expBox: {
+    background: "#faf7f2",
+    borderRadius: 10,
+    padding: "14px 16px",
+    marginBottom: 16,
+  },
+  expResult: {
+    fontWeight: 700,
+    fontSize: 14,
+    marginBottom: 8,
+    color: "#2b231c",
+  },
+  expText: {
+    fontSize: 13,
+    color: "#555",
+    lineHeight: 1.8,
+    margin: 0,
+    whiteSpace: "pre-wrap",
+  },
+  nextRow: {
+    display: "flex",
+    gap: 8,
+  },
+  nextBtn: {
+    flex: 2,
+    padding: "13px",
+    background: "#8C5A3C",
+    color: "#fff",
+    border: "none",
+    borderRadius: 12,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  changeBtn: {
+    flex: 1,
+    padding: "13px",
+    background: "#f7f1e9",
+    color: "#8C5A3C",
+    border: "none",
+    borderRadius: 12,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  errorText: {
+    color: "#e74c3c",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 12,
+  },
+};
