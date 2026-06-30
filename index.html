@@ -3,202 +3,201 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学習アプリ</title>
+<title>ツール一覧 | こどもの行動相談室</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
 
-body {
-font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
-background: #f0f4f3;
-color: #333;
-min-height: 100vh;
-}
+  :root{
+    --sand:    #F6F2EA;
+    --sand-2:  #EFE8DA;
+    --ink:     #2F3A33;
+    --moss:    #5C7A63;
+    --moss-d:  #3F5945;
+    --clay:    #B98A63;
+    --line:    #DAD2C0;
+  }
 
-header {
-background: #4F7F8F;
-color: white;
-padding: 20px 20px 16px;
-text-align: center;
-}
+  *{ box-sizing:border-box; margin:0; padding:0; }
 
-header h1 { font-size: 20px; font-weight: 900; letter-spacing: 0.05em; }
-header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+  body{
+    background:var(--sand);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
 
-.main {
-max-width: 600px;
-margin: 0 auto;
-padding: 24px 16px 60px;
-}
+  /* ambient texture */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(92,122,99,0.07), transparent 40%),
+      radial-gradient(circle at 88% 82%, rgba(185,138,99,0.08), transparent 45%);
+    pointer-events:none;
+  }
 
-.section-label {
-font-size: 11px;
-font-weight: 700;
-color: #4F7F8F;
-letter-spacing: 0.08em;
-margin-bottom: 12px;
-padding-left: 4px;
-}
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:64px 24px 80px;
+    position:relative;
+  }
 
-.app-grid {
-display: flex;
-flex-direction: column;
-gap: 10px;
-margin-bottom: 32px;
-}
+  header{
+    margin-bottom:56px;
+  }
 
-.app-card {
-background: white;
-border-radius: 14px;
-padding: 16px 18px;
-display: flex;
-align-items: center;
-gap: 16px;
-box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-text-decoration: none;
-color: #333;
-transition: all 0.2s;
-border: 1.5px solid transparent;
-}
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:0.28em;
+    color:var(--moss-d);
+    text-transform:uppercase;
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:18px; height:1px;
+    background:var(--clay);
+    display:inline-block;
+  }
 
-.app-card:hover {
-border-color: #4F7F8F;
-transform: translateY(-1px);
-box-shadow: 0 4px 16px rgba(79,127,143,0.15);
-}
+  h1{
+    font-family:'Shippori Mincho', serif;
+    font-size:clamp(28px, 6vw, 38px);
+    font-weight:700;
+    line-height:1.5;
+    color:var(--moss-d);
+    letter-spacing:0.02em;
+  }
 
-.app-card.coming-soon {
-opacity: 0.5;
-pointer-events: none;
-}
+  .lead{
+    margin-top:18px;
+    font-size:14.5px;
+    line-height:1.9;
+    color:#5C6760;
+    max-width:46ch;
+  }
 
-.app-icon {
-font-size: 28px;
-width: 48px;
-height: 48px;
-background: #E7EEEC;
-border-radius: 12px;
-display: flex;
-align-items: center;
-justify-content: center;
-flex-shrink: 0;
-}
+  .list{
+    display:flex;
+    flex-direction:column;
+    border-top:1px solid var(--line);
+  }
 
-.app-info { flex: 1; }
+  .card{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:24px 6px;
+    border-bottom:1px solid var(--line);
+    text-decoration:none;
+    color:inherit;
+    position:relative;
+    transition:padding-left 0.25s ease, background 0.25s ease;
+  }
 
-.app-name {
-font-size: 15px;
-font-weight: 700;
-margin-bottom: 3px;
-}
+  .card:hover, .card:focus-visible{
+    padding-left:14px;
+    background:rgba(92,122,99,0.05);
+    outline:none;
+  }
+  .card:focus-visible{
+    box-shadow:inset 2px 0 0 var(--moss);
+  }
 
-.app-desc {
-font-size: 12px;
-color: #888;
-}
+  .mark{
+    font-family:'Shippori Mincho', serif;
+    font-size:13px;
+    color:var(--clay);
+    letter-spacing:0.06em;
+    width:34px;
+    flex-shrink:0;
+  }
 
-.app-badge {
-font-size: 11px;
-font-weight: 700;
-padding: 3px 10px;
-border-radius: 20px;
-flex-shrink: 0;
-}
+  .meta{
+    flex:1;
+    min-width:0;
+  }
 
-.badge-ready {
-background: #e6f4ea;
-color: #2e7d32;
-}
+  .card-title{
+    font-size:17px;
+    font-weight:700;
+    color:var(--moss-d);
+    margin-bottom:5px;
+    letter-spacing:0.01em;
+  }
 
-.badge-soon {
-background: #f0f4f3;
-color: #aaa;
-}
+  .card-desc{
+    font-size:13px;
+    color:#74807A;
+    line-height:1.7;
+  }
 
-footer {
-text-align: center;
-font-size: 11px;
-color: #aaa;
-padding: 20px;
-}
+  .arrow{
+    font-size:18px;
+    color:var(--clay);
+    flex-shrink:0;
+    transform:translateX(0);
+    transition:transform 0.25s ease;
+  }
+  .card:hover .arrow, .card:focus-visible .arrow{
+    transform:translateX(4px);
+  }
+
+  footer{
+    margin-top:64px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    font-size:12px;
+    color:#8A9189;
+    letter-spacing:0.04em;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card, .arrow{ transition:none; }
+  }
 </style>
 </head>
 <body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">こどもの行動相談室</div>
+      <h1>ツール一覧</h1>
+      <p class="lead">PFA・統計学習・研究法の実践ツールをまとめています。使いたいツールを選んでください。</p>
+    </header>
 
-<header>
-<h1>📚 学習アプリ</h1>
-<p>心理学・ABA 学習ツール</p>
-</header>
+    <nav class="list">
+      <a class="card" href="research-method-quiz.html">
+        <span class="mark">01</span>
+        <span class="meta">
+          <span class="card-title">心理学研究法クイズ</span>
+          <span class="card-desc">放送大学「心理学研究法」の理解度確認クイズ</span>
+        </span>
+        <span class="arrow">→</span>
+      </a>
 
-<div class="main">
+      <a class="card" href="stastics.html">
+        <span class="mark">02</span>
+        <span class="meta">
+          <span class="card-title">心理学統計法クイズ</span>
+          <span class="card-desc">相関・分散分析・検定など統計の演習問題</span>
+        </span>
+        <span class="arrow">→</span>
+      </a>
+    </nav>
 
-<div class="section-label">▸ クイズ・演習</div>
-<div class="app-grid">
-
-  <a class="app-card" href="statistics.html">
-    <div class="app-icon">📊</div>
-    <div class="app-info">
-      <div class="app-name">心理学統計法</div>
-      <div class="app-desc">4択クイズ・全53問・解説付き</div>
-    </div>
-    <span class="app-badge badge-ready">利用可</span>
-  </a>
-
-  <a class="app-card coming-soon" href="#">
-    <div class="app-icon">🔬</div>
-    <div class="app-info">
-      <div class="app-name">心理学研究法</div>
-      <div class="app-desc">準備中</div>
-    </div>
-    <span class="app-badge badge-soon">準備中</span>
-  </a>
-
-  <a class="app-card coming-soon" href="#">
-    <div class="app-icon">🧠</div>
-    <div class="app-info">
-      <div class="app-name">発達心理学</div>
-      <div class="app-desc">準備中</div>
-    </div>
-    <span class="app-badge badge-soon">準備中</span>
-  </a>
-
-  <a class="app-card coming-soon" href="#">
-    <div class="app-icon">💬</div>
-    <div class="app-info">
-      <div class="app-name">言語心理学</div>
-      <div class="app-desc">準備中</div>
-    </div>
-    <span class="app-badge badge-soon">準備中</span>
-  </a>
-
-  <a class="app-card coming-soon" href="#">
-    <div class="app-icon">🏫</div>
-    <div class="app-info">
-      <div class="app-name">教育・学校心理学</div>
-      <div class="app-desc">準備中</div>
-    </div>
-    <span class="app-badge badge-soon">準備中</span>
-  </a>
-
-  <a class="app-card coming-soon" href="#">
-    <div class="app-icon">♿</div>
-    <div class="app-info">
-      <div class="app-name">障害者・障害児心理学</div>
-      <div class="app-desc">準備中</div>
-    </div>
-    <span class="app-badge badge-soon">準備中</span>
-  </a>
-
-</div>
-
-<div class="section-label">▸ 臨床ツール</div>
-<div class="app-grid">
-
-
-</div>
-
-</div>
-
-<footer>こどもの行動相談室</footer>
-
+    <footer>
+      <span>神庭拓也</span>
+      <span><a href="pfa-app.html" style="color:inherit; text-decoration:none; opacity:0.55;">こどもの行動相談室</a></span>
+    </footer>
+  </div>
 </body>
 </html>
