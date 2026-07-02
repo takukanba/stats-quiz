@@ -78,3 +78,290 @@
 <body>
 <div class="wrap">
   <header>
+    <p class="eyebrow">Weekly management dashboard</p>
+    <h1>療育経営ダッシュボード</h1>
+    <p>毎週の実績を入力するだけで、推定売上・利用率・目標との差を自動計算。数字で経営を考える練習用ツール。</p>
+  </header>
+
+  <div class="card">
+    <details id="settingsDetails">
+      <summary>単価・目標の設定（初回に入力）</summary>
+      <div class="form-grid" style="margin-top:6px;">
+        <div><label>基本単価（円/回）</label><input type="number" id="setUnit" placeholder="例: 6000"></div>
+        <div><label>平均加算単価（円/回）</label><input type="number" id="setAddon" placeholder="例: 1500"></div>
+        <div><label>週の開所日数</label><input type="number" id="setDays" placeholder="例: 5"></div>
+        <div><label>目標月間売上（円）</label><input type="number" id="setTarget" placeholder="例: 3000000"></div>
+      </div>
+      <div class="row"><button class="btn" id="saveSettings">設定を保存</button></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>今週の実績を入力</h2>
+    <p class="sub">延べ利用回数＝この週にあった利用（出席）の合計回数。</p>
+    <div class="form-grid">
+      <div><label>週の開始日</label><input type="date" id="inWeek"></div>
+      <div><label>契約人数</label><input type="number" id="inContracts"></div>
+      <div><label>実利用人数</label><input type="number" id="inUsers"></div>
+      <div><label>延べ利用回数</label><input type="number" id="inVisits"></div>
+    </div>
+    <div class="row">
+      <button class="btn" id="addEntry">この週を記録する</button>
+      <span id="formMsg" style="font-size:12px;color:var(--ink-soft);align-self:center;"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>今週のダッシュボード</h2>
+    <p class="sub" id="latestWeekLabel"></p>
+    <div class="grid">
+      <div class="stat"><div class="label">今週推定売上</div><div class="value" id="statWeekSales">—</div></div>
+      <div class="stat"><div class="label">今月推定売上</div><div class="value" id="statMonthSales">—</div><div class="diff" id="statMonthDiff"></div></div>
+      <div class="stat"><div class="label">今週の利用率</div><div class="value" id="statUtil">—</div></div>
+      <div class="stat"><div class="label">目標との差</div><div class="value" id="statGap">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>利用率の推移</h2>
+    <p class="sub">直近8週分</p>
+    <div class="bars" id="barsUtil"></div>
+  </div>
+
+  <div class="card">
+    <h2>もし、を試算する</h2>
+    <p class="sub">最新週の実績をもとに、月間売上への影響をシミュレーション</p>
+
+    <div class="sim-row">
+      <div>
+        <div class="sim-title">利用率が <span id="simUtilLabel">+0</span>% 上がると</div>
+        <input type="range" id="simUtil" min="-20" max="20" value="0" step="1">
+      </div>
+      <div class="sim-result" id="simUtilResult">±0円 / 月</div>
+    </div>
+
+    <div class="sim-row">
+      <div>
+        <div class="sim-title">新規契約が <span id="simContractLabel">0</span> 名増えると</div>
+        <input type="range" id="simContract" min="0" max="15" value="0" step="1">
+      </div>
+      <div class="sim-result" id="simContractResult">+0円 / 月</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>週次データ</h2>
+    <div id="tableWrap"><div class="empty">まだ記録がありません</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const fmt = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+const fmtPct = n => (n>=0?'+':'') + n.toFixed(1) + '%';
+
+let settings = { unit: 6000, addon: 1500, days: 5, target: 3000000 };
+let entries = [];
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+async function loadData(){
+  try{
+    const s = await window.storage.get('settings');
+    if(s && s.value) settings = JSON.parse(s.value);
+  }catch(e){}
+  try{
+    const e = await window.storage.get('entries');
+    if(e && e.value) entries = JSON.parse(e.value);
+  }catch(e){}
+  applySettingsToForm();
+  renderAll();
+}
+
+function applySettingsToForm(){
+  document.getElementById('setUnit').value = settings.unit;
+  document.getElementById('setAddon').value = settings.addon;
+  document.getElementById('setDays').value = settings.days;
+  document.getElementById('setTarget').value = settings.target;
+}
+
+async function saveSettings(){
+  settings = {
+    unit: Number(document.getElementById('setUnit').value) || 0,
+    addon: Number(document.getElementById('setAddon').value) || 0,
+    days: Number(document.getElementById('setDays').value) || 5,
+    target: Number(document.getElementById('setTarget').value) || 0,
+  };
+  try{
+    await window.storage.set('settings', JSON.stringify(settings));
+    showToast('設定を保存しました');
+    document.getElementById('settingsDetails').removeAttribute('open');
+    renderAll();
+  }catch(e){ showToast('保存に失敗しました'); }
+}
+
+async function addEntry(){
+  const week = document.getElementById('inWeek').value;
+  const contracts = Number(document.getElementById('inContracts').value);
+  const users = Number(document.getElementById('inUsers').value);
+  const visits = Number(document.getElementById('inVisits').value);
+  const msg = document.getElementById('formMsg');
+  if(!week || !contracts || !visits){
+    msg.textContent = '週・契約人数・延べ利用回数は必須です';
+    return;
+  }
+  entries = entries.filter(e => e.week !== week);
+  entries.push({ week, contracts, users, visits });
+  entries.sort((a,b)=> a.week.localeCompare(b.week));
+  try{
+    await window.storage.set('entries', JSON.stringify(entries));
+    msg.textContent = '';
+    showToast('記録しました');
+    document.getElementById('inContracts').value='';
+    document.getElementById('inUsers').value='';
+    document.getElementById('inVisits').value='';
+    renderAll();
+  }catch(e){ msg.textContent = '保存に失敗しました'; }
+}
+
+async function deleteEntry(week){
+  entries = entries.filter(e => e.week !== week);
+  try{
+    await window.storage.set('entries', JSON.stringify(entries));
+    renderAll();
+  }catch(e){ showToast('削除に失敗しました'); }
+}
+
+function calcWeekSales(e){
+  return e.visits * (settings.unit + settings.addon);
+}
+function calcUtil(e){
+  const capacity = e.contracts * settings.days;
+  return capacity > 0 ? (e.visits / capacity) * 100 : 0;
+}
+
+function renderAll(){
+  renderDashboard();
+  renderBars();
+  renderSimulator();
+  renderTable();
+}
+
+function renderDashboard(){
+  const latest = entries[entries.length - 1];
+  const label = document.getElementById('latestWeekLabel');
+  if(!latest){
+    label.textContent = 'まだ週次データがありません。上のフォームから入力してください。';
+    ['statWeekSales','statMonthSales','statUtil','statGap'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('statMonthDiff').textContent='';
+    return;
+  }
+  label.textContent = `直近入力週: ${latest.week}`;
+
+  const weekSales = calcWeekSales(latest);
+  const monthSales = weekSales * 4.33;
+  const util = calcUtil(latest);
+  const gap = settings.target - monthSales;
+
+  document.getElementById('statWeekSales').textContent = fmt(weekSales);
+  document.getElementById('statMonthSales').textContent = fmt(monthSales);
+  document.getElementById('statUtil').textContent = util.toFixed(1) + '%';
+
+  const gapEl = document.getElementById('statGap');
+  gapEl.textContent = (gap>0 ? '−' : '+') + fmt(Math.abs(gap)).replace('¥','¥');
+  gapEl.style.color = gap>0 ? 'var(--down)' : 'var(--up)';
+
+  const diffEl = document.getElementById('statMonthDiff');
+  if(settings.target>0){
+    const pct = ((monthSales-settings.target)/settings.target*100);
+    diffEl.textContent = '目標比 ' + fmtPct(pct);
+    diffEl.className = 'diff ' + (pct>=0?'pos':'neg');
+  } else { diffEl.textContent=''; }
+}
+
+function renderBars(){
+  const wrap = document.getElementById('barsUtil');
+  wrap.innerHTML = '';
+  const last8 = entries.slice(-8);
+  if(last8.length===0){ wrap.innerHTML = '<div class="empty">データがありません</div>'; return; }
+  const max = Math.max(100, ...last8.map(e=>calcUtil(e)));
+  last8.forEach(e=>{
+    const util = calcUtil(e);
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    const h = Math.max(2, (util/max)*100);
+    col.innerHTML = `<div style="font-size:10px;color:var(--ink-soft);font-family:'EB Garamond',serif;">${util.toFixed(0)}%</div>
+      <div class="bar" style="height:${h}%"></div>
+      <div class="bar-label">${e.week.slice(5)}</div>`;
+    wrap.appendChild(col);
+  });
+}
+
+function renderSimulator(){
+  const latest = entries[entries.length-1];
+  const utilInput = document.getElementById('simUtil');
+  const contractInput = document.getElementById('simContract');
+
+  function update(){
+    const utilLabel = document.getElementById('simUtilLabel');
+    const contractLabel = document.getElementById('simContractLabel');
+    const utilResult = document.getElementById('simUtilResult');
+    const contractResult = document.getElementById('simContractResult');
+
+    utilLabel.textContent = (utilInput.value>=0?'+':'') + utilInput.value;
+    contractLabel.textContent = contractInput.value;
+
+    if(!latest){
+      utilResult.textContent = '— (データなし)';
+      contractResult.textContent = '— (データなし)';
+      return;
+    }
+    const capacity = latest.contracts * settings.days;
+    const extraVisitsPerWeek = capacity * (Number(utilInput.value)/100);
+    const extraWeekSales = extraVisitsPerWeek * (settings.unit + settings.addon);
+    const extraMonthSales = extraWeekSales * 4.33;
+    utilResult.textContent = (extraMonthSales>=0?'+':'') + fmt(extraMonthSales) + ' / 月';
+
+    const visitsPerUser = latest.users>0 ? latest.visits/latest.users : settings.days;
+    const newContractMonthSales = Number(contractInput.value) * visitsPerUser * (settings.unit+settings.addon) * 4.33;
+    contractResult.textContent = '+' + fmt(newContractMonthSales) + ' / 月';
+  }
+  utilInput.oninput = update;
+  contractInput.oninput = update;
+  update();
+}
+
+function renderTable(){
+  const wrap = document.getElementById('tableWrap');
+  if(entries.length===0){ wrap.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  let html = `<table><thead><tr>
+    <th>週</th><th style="text-align:right">契約</th><th style="text-align:right">利用者</th>
+    <th style="text-align:right">延べ利用</th><th style="text-align:right">利用率</th>
+    <th style="text-align:right">週推定売上</th><th></th></tr></thead><tbody>`;
+  [...entries].reverse().forEach(e=>{
+    html += `<tr>
+      <td>${e.week}</td>
+      <td class="num">${e.contracts}</td>
+      <td class="num">${e.users||'—'}</td>
+      <td class="num">${e.visits}</td>
+      <td class="num">${calcUtil(e).toFixed(1)}%</td>
+      <td class="num">${fmt(calcWeekSales(e))}</td>
+      <td><button class="del-btn" onclick="deleteEntry('${e.week}')">削除</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+document.getElementById('saveSettings').addEventListener('click', saveSettings);
+document.getElementById('addEntry').addEventListener('click', addEntry);
+
+loadData();
+</script>
+</body>
+</html>
