@@ -1,21 +1,246 @@
-import { useState, useCallback } from "react";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心理学研究法 AI問題生成クイズ</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #EFEAE2;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px 12px 40px;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  }
+  .card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 2px 20px rgba(80,60,40,0.10);
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .badge {
+    background: #8C5A3C;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    border-radius: 5px;
+    padding: 3px 9px;
+  }
+  .score-pill {
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 3px 11px;
+  }
+  h1.title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #2b231c;
+    margin: 0 0 6px;
+    line-height: 1.25;
+  }
+  .title-accent { color: #8C5A3C; }
+  .subtitle {
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 22px;
+    line-height: 1.6;
+  }
+  .section-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #aaa;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 20px;
+    max-height: 320px;
+    overflow-y: auto;
+    border-radius: 10px;
+    border: 1px solid #ece5da;
+    padding: 4px;
+  }
+  .session-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+  }
+  .session-btn.active {
+    background: #f7f1e9;
+    border: 1.5px solid #8C5A3C;
+  }
+  .session-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: #8C5A3C;
+    min-width: 22px;
+    background: #f0e4d8;
+    border-radius: 4px;
+    padding: 2px 5px;
+    text-align: center;
+  }
+  .session-title { font-size: 13px; color: #333; font-weight: 500; }
+  .diff-row { display: flex; gap: 8px; margin-bottom: 22px; }
+  .diff-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 10px;
+    border: 1.5px solid #e3dccf;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    font-family: inherit;
+  }
+  .diff-btn.active { border: 2px solid #4F7F8F; background: #f4f9fa; }
+  .diff-label { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 2px; }
+  .diff-desc { font-size: 10px; color: #999; }
+  .start-btn, .next-btn {
+    width: 100%;
+    padding: 14px;
+    background: #8C5A3C;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .quiz-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    color: #8C5A3C;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+  }
+  .session-tag { font-size: 11px; color: #888; font-weight: 600; margin-bottom: 18px; line-height: 1.5; }
+  .question-text { font-size: 15px; font-weight: 700; color: #2b231c; line-height: 1.75; margin-bottom: 18px; }
+  .choices-col { display: flex; flex-direction: column; gap: 9px; margin-bottom: 18px; }
+  .choice-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #e3dccf;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.55;
+    text-align: left;
+    color: #222;
+    width: 100%;
+    font-family: inherit;
+  }
+  .choice-btn.correct { background: #eafaf1; border-color: #2ecc71; color: #1a6a3a; }
+  .choice-btn.wrong { background: #fdecea; border-color: #e74c3c; color: #a93226; }
+  .choice-btn.dim { opacity: 0.5; }
+  .choice-key { font-weight: 800; font-size: 13px; min-width: 18px; color: #8C5A3C; flex-shrink: 0; }
+  .exp-box { background: #faf7f2; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .exp-result { font-weight: 700; font-size: 14px; margin-bottom: 8px; color: #2b231c; }
+  .exp-text { font-size: 13px; color: #555; line-height: 1.8; margin: 0; white-space: pre-wrap; }
+  .next-row { display: flex; gap: 8px; }
+  .next-row .next-btn { flex: 2; padding: 13px; font-size: 13px; }
+  .change-btn {
+    flex: 1;
+    padding: 13px;
+    background: #f7f1e9;
+    color: #8C5A3C;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
 
+  <!-- HOME SCREEN -->
+  <div id="home-screen">
+    <div class="header-row">
+      <span class="badge">心理学研究法</span>
+      <span id="home-score-pill" class="score-pill hidden"></span>
+    </div>
+    <h1 class="title">AI問題生成<br><span class="title-accent">クイズ</span></h1>
+    <p class="subtitle">回とレベルを選ぶだけ。毎回ランダムに問題が出ます。</p>
+    <div class="section-label">回を選ぶ</div>
+    <div class="session-list" id="session-list"></div>
+    <div class="section-label">難易度</div>
+    <div class="diff-row" id="diff-row"></div>
+    <button class="start-btn" id="start-btn">第<span id="start-session-num"></span>回の問題を開始 →</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quiz-screen" class="hidden">
+    <div class="quiz-top-row">
+      <button class="back-btn" id="back-btn">← 回選択</button>
+      <span id="quiz-score-pill" class="score-pill hidden"></span>
+    </div>
+    <div class="session-tag" id="session-tag"></div>
+    <p class="question-text" id="question-text"></p>
+    <div class="choices-col" id="choices-col"></div>
+    <div id="exp-area"></div>
+    <p id="error-text" style="color:#e74c3c;font-size:12px;text-align:center;margin-top:12px;" class="hidden"></p>
+  </div>
+
+</div>
+
+<script>
 const SESSIONS = [
-  { id: 1, title: "心理学研究の基礎知識", keywords: "実証科学、概念、変数、妥当性と信頼性、相関と因果" },
-  { id: 2, title: "研究法概説", keywords: "実験法、調査法、観察法、面接法、検査法、介入研究法" },
-  { id: 3, title: "記述統計と推測統計", keywords: "尺度、基礎統計、推測統計、統計的仮説検定、ベイズ統計" },
-  { id: 4, title: "実験法１：実験法の基礎", keywords: "実験法、実験計画法、剰余変数の統制" },
-  { id: 5, title: "実験法２：心理学的測定法の基礎", keywords: "行動指標、生理指標、心理物理学的測定法" },
-  { id: 6, title: "調査法１：調査法の基礎", keywords: "調査法、サンプリング、心理尺度、構成概念、内容的妥当性" },
-  { id: 7, title: "調査法２：尺度作成の基礎と調査法の実際", keywords: "回答方法、調査票、信頼性、妥当性" },
-  { id: 8, title: "観察法１：観察データの測定", keywords: "行動観察、産物記録法、時間見本法" },
-  { id: 9, title: "観察法２：観察データの解析", keywords: "信頼性、妥当性、グラフ化、観察データの統計解析" },
-  { id: 10, title: "面接法１：臨床的面接法", keywords: "ラポール、マイクロカウンセリング、非言語的コミュニケーション、事例研究" },
-  { id: 11, title: "面接法２：調査的面接法", keywords: "構造化面接、半構造化面接、非構造化面接、トランスクリプト" },
-  { id: 12, title: "検査法", keywords: "知能検査、パーソナリティ検査、投影法、テストバッテリー" },
-  { id: 13, title: "介入研究法", keywords: "介入研究、ランダム化比較試験、一事例実験デザイン" },
-  { id: 14, title: "心理学研究の倫理１：基礎的研究の実施のために", keywords: "倫理審査、QRPs、再現可能性、オープンデータ" },
-  { id: 15, title: "心理学研究の倫理２：臨床的研究の実施のために", keywords: "研究倫理、臨床的研究、研究倫理委員会" },
+  { id: 1, title: "心理学研究の基礎知識" },
+  { id: 2, title: "研究法概説" },
+  { id: 3, title: "記述統計と推測統計" },
+  { id: 4, title: "実験法１：実験法の基礎" },
+  { id: 5, title: "実験法２：心理学的測定法の基礎" },
+  { id: 6, title: "調査法１：調査法の基礎" },
+  { id: 7, title: "調査法２：尺度作成の基礎と調査法の実際" },
+  { id: 8, title: "観察法１：観察データの測定" },
+  { id: 9, title: "観察法２：観察データの解析" },
+  { id: 10, title: "面接法１：臨床的面接法" },
+  { id: 11, title: "面接法２：調査的面接法" },
+  { id: 12, title: "検査法" },
+  { id: 13, title: "介入研究法" },
+  { id: 14, title: "心理学研究の倫理１：基礎的研究の実施のために" },
+  { id: 15, title: "心理学研究の倫理２：臨床的研究の実施のために" },
 ];
 
 const DIFFICULTY = [
@@ -24,498 +249,253 @@ const DIFFICULTY = [
   { id: "advanced", label: "難問", desc: "事例適用・深い理解" },
 ];
 
-const buildPrompt = (session, difficulty) => {
-  const diffLabel = DIFFICULTY.find((d) => d.id === difficulty)?.label;
-  const diffDesc = DIFFICULTY.find((d) => d.id === difficulty)?.desc;
-  return `あなたは心理学研究法（研究方法論）の試験問題作成の専門家です。
-
-以下の条件で問題を1問作成してください：
-
-【対象トピック】第${session.id}回「${session.title}」
-【キーワード】${session.keywords}
-【難易度】${diffLabel}（${diffDesc}）
-【形式】4択問題（選択肢A〜D）
-
-重要な指示：
-- キーワードに含まれる概念・手法・用語から出題すること
-- 心理学研究法の試験に実際に出そうなリアルな問題にする（用語の定義、手法同士の比較、具体的な研究場面での適用判断など）
-- 選択肢は紛らわしいが、正しく理解していれば明確に正誤が分かるものにする
-- 日本語で書く
-
-解説については特に力を入れること：
-- 正解がなぜ正しいかを、定義や具体例を交えて丁寧に説明する
-- 他の3つの選択肢それぞれについて、なぜ誤りなのか（どこが違うのか、どんな場面なら正しくなるのか）を個別に説明する
-- 関連する用語や、この概念が他の研究法とどう違うかにも触れ、理解が深まるようにする
-- 解説全体で5〜8文程度、しっかりした分量にする
-
-必ず以下のJSON形式のみで返答してください（余分なテキスト・マークダウン不可）:
-{
-  "question": "問題文",
-  "choices": {
-    "A": "選択肢A",
-    "B": "選択肢B",
-    "C": "選択肢C",
-    "D": "選択肢D"
+// 問題バンク: QUESTIONS[sessionId][difficulty] = [ {q, choices:{A,B,C,D}, answer, exp}, ... ]
+const QUESTIONS = {
+  1: {
+    basic: [{ q: "観察や実験など客観的な手続きによってデータを収集し、検証可能な形で知見を積み上げていく科学のあり方を何と呼ぶか。", choices: { A: "実証科学", B: "演繹科学", C: "形而上学", D: "思弁科学" }, answer: "A", exp: "実証科学は観察・実験などの経験的データに基づき仮説を検証していく科学のあり方。心理学は実証科学の一分野として発展してきた。" }],
+    intermediate: [{ q: "心理尺度の測定結果が、測定しようとしている概念(構成概念)を実際にどの程度正しく捉えているかを表す指標は何か。", choices: { A: "信頼性", B: "妥当性", C: "相関係数", D: "標準誤差" }, answer: "B", exp: "妥当性は測定したい構成概念を実際に測れているかを表す指標。信頼性は測定の一貫性・安定性を表す別の指標であり、両者は区別して理解する必要がある。" }],
+    advanced: [{ q: "2つの変数間に強い相関が見られた場合の解釈として、最も適切なものはどれか。", choices: { A: "相関が見られれば必ず一方が他方の原因である", B: "相関があっても因果関係があるとは限らず、交絡変数や逆の因果の可能性を検討する必要がある", C: "相関係数が高いほど、必ず実験研究による裏付けが不要になる", D: "相関があれば妥当性も自動的に保証される" }, answer: "B", exp: "相関関係は因果関係を必ずしも意味しない(「相関は因果を含意しない」)。第三の変数の影響(交絡)や逆方向の因果の可能性を検討し、因果を主張するには実験的統制など追加の証拠が必要となる。" }],
   },
-  "answer": "正解（A/B/C/Dのいずれか1文字のみ）",
-  "explanation": "詳しい解説（正解の理由＋各誤答選択肢への個別言及を含む、5〜8文）"
-}`;
+  2: {
+    basic: [{ q: "研究者が独立変数を操作し、他の条件を統制した上で従属変数への影響を検討する研究法を何と呼ぶか。", choices: { A: "調査法", B: "実験法", C: "観察法", D: "面接法" }, answer: "B", exp: "実験法は独立変数を意図的に操作し、剰余変数を統制した上で、その効果を従属変数の変化として測定する研究法であり、因果関係を検討するのに適している。" }],
+    intermediate: [{ q: "対象者の自然な行動をそのまま記録し、分析する研究法を何と呼ぶか。", choices: { A: "実験法", B: "観察法", C: "検査法", D: "介入研究法" }, answer: "B", exp: "観察法は実験的操作を加えず、対象者の自然な行動をありのままに観察・記録する研究法。生態学的妥当性が高い一方、変数の統制は難しい。" }],
+    advanced: [{ q: "複数の研究法の中から研究テーマに応じて最も適切な手法を選ぶ際に、重視すべき観点として適切でないものはどれか。", choices: { A: "研究目的(記述・関連の検討・因果の検証など)", B: "対象者への負担や倫理的配慮", C: "測定したい構成概念の性質", D: "研究者の好みのみで機械的に決める" }, answer: "D", exp: "研究法の選択は、研究目的、対象者への負担・倫理性、測定したい構成概念の性質などを総合的に考慮して行うべきであり、単なる好みだけで選ぶべきではない。" }],
+  },
+  3: {
+    basic: [{ q: "手元にあるデータの特徴(平均・散布度など)を要約する統計を何と呼ぶか。", choices: { A: "記述統計", B: "推測統計", C: "統計的仮説検定", D: "ベイズ統計" }, answer: "A", exp: "記述統計はデータそのものの特徴を要約・記述する統計。標本から母集団の性質を推測する推測統計とは区別される。" }],
+    intermediate: [{ q: "標本から得られたデータをもとに、母集団についての仮説を確率的に判断する手続きを何と呼ぶか。", choices: { A: "記述統計", B: "統計的仮説検定", C: "尺度構成", D: "内容分析" }, answer: "B", exp: "統計的仮説検定は、標本データをもとに母集団についての仮説(帰無仮説など)を、確率(p値など)を用いて検討する推測統計の代表的な手続き。" }],
+    advanced: [{ q: "事前の知識や信念(事前確率)をデータによって更新し、事後確率を求める統計的アプローチを何と呼ぶか。", choices: { A: "頻度論的統計", B: "記述統計", C: "ベイズ統計", D: "尺度水準の分類" }, answer: "C", exp: "ベイズ統計は、事前確率をデータに基づいて更新し事後確率を求める枠組みであり、伝統的な頻度論的統計(p値に基づく判断)とは異なる考え方に立つ。" }],
+  },
+  4: {
+    basic: [{ q: "実験において、研究者が意図的に操作する変数を何と呼ぶか。", choices: { A: "従属変数", B: "独立変数", C: "剰余変数", D: "構成概念" }, answer: "B", exp: "独立変数は研究者が意図的に操作・設定する変数であり、その効果として測定される変数を従属変数と呼ぶ。" }],
+    intermediate: [{ q: "従属変数に影響を与えうるが、研究の関心対象ではない変数を統制することを何と呼ぶか。", choices: { A: "剰余変数の統制", B: "独立変数の操作", C: "構成概念の定義", D: "面接法の実施" }, answer: "A", exp: "剰余変数(交絡変数となりうる変数)を統制することで、従属変数の変化が独立変数の操作によるものだと解釈しやすくなる。統制が不十分だと内的妥当性が損なわれる。" }],
+    advanced: [{ q: "実験計画法において、参加者を無作為に各条件へ割り当てる目的として最も適切なものはどれか。", choices: { A: "実験の所要時間を短縮するため", B: "既知・未知の剰余変数の影響を条件間で均等化し、内的妥当性を高めるため", C: "参加者数を自動的に増やすため", D: "従属変数の妥当性を保証するため" }, answer: "B", exp: "無作為割当により、既知・未知を問わず参加者間の個人差(剰余変数)の影響が各条件でほぼ均等になり、条件間の結果の差を独立変数の効果として解釈しやすくなる(内的妥当性の向上)。" }],
+  },
+  5: {
+    basic: [{ q: "反応時間や正答率など、対象者の外的な振る舞いを数量化して測定する指標を何と呼ぶか。", choices: { A: "生理指標", B: "行動指標", C: "心理物理学的測定法", D: "投影法" }, answer: "B", exp: "行動指標は反応時間、エラー率、選択行動など、観察可能な行動をもとにした測定指標。生理指標(心拍・脳波など)とは区別される。" }],
+    intermediate: [{ q: "心拍数や皮膚電気反応、脳波(EEG)などを用いて心理的状態を測定する指標を何と呼ぶか。", choices: { A: "行動指標", B: "生理指標", C: "自己報告式尺度", D: "投影法" }, answer: "B", exp: "生理指標は身体の生理的反応(心拍、皮膚電気反応、脳波など)を通じて、意識的な報告に依らずに心理的・生理的状態を推定する測定法。" }],
+    advanced: [{ q: "物理的な刺激の強さと、それに対する主観的な感覚の大きさとの関係を数量的に検討する測定法を何と呼ぶか。", choices: { A: "行動指標", B: "心理物理学的測定法", C: "構成概念の操作的定義", D: "内容的妥当性の検討" }, answer: "B", exp: "心理物理学的測定法(精神物理学的測定法)は、刺激の物理量と主観的な感覚量との対応関係(例:弁別閾、丁度可知差異)を数量的に検討する測定アプローチ。" }],
+  },
+  6: {
+    basic: [{ q: "質問紙などを用いて多数の対象者から回答を収集し、変数間の関連を検討する研究法を何と呼ぶか。", choices: { A: "実験法", B: "調査法", C: "観察法", D: "検査法" }, answer: "B", exp: "調査法は質問紙や面接などを通じて多数の対象者から情報を収集し、変数間の関連(相関)などを検討する研究法。実験のような操作は通常行わない。" }],
+    intermediate: [{ q: "母集団から調査対象となる標本を選び出す手続きを何と呼ぶか。", choices: { A: "ラポール形成", B: "サンプリング", C: "産物記録法", D: "半構造化面接" }, answer: "B", exp: "サンプリング(標本抽出)は、母集団の中から実際に調査を行う標本を選び出す手続き。無作為抽出などの方法により、標本の代表性が確保される。" }],
+    advanced: [{ q: "直接観察できない抽象的な心理的概念(例:自尊心、外向性)を何と呼び、それを尺度化する際に重視すべき妥当性は何か。", choices: { A: "構成概念、内容的妥当性", B: "剰余変数、基準関連妥当性", C: "独立変数、信頼性", D: "行動指標、再検査信頼性" }, answer: "A", exp: "直接観察できない抽象的な心理的概念を構成概念と呼ぶ。構成概念を尺度化する際には、尺度項目がその構成概念の内容を十分にカバーしているかという内容的妥当性をはじめ、複数の妥当性の検討が重要になる。" }],
+  },
+  7: {
+    basic: [{ q: "調査票において、「全くそう思わない〜非常にそう思う」のような複数段階で回答を求める代表的な形式を何と呼ぶか。", choices: { A: "二肢選択法", B: "リッカート法(評定尺度法)", C: "自由記述法", D: "強制選択法" }, answer: "B", exp: "リッカート法(評定尺度法)は、複数段階(例:5件法・7件法)で同意の程度などを回答してもらう代表的な回答形式で、心理尺度で広く用いられる。" }],
+    intermediate: [{ q: "同じ対象者に同じ尺度を時間をおいて2回実施し、両者の得点の相関から測定の安定性を検討する信頼性の指標を何と呼ぶか。", choices: { A: "内的整合性", B: "再検査信頼性", C: "内容的妥当性", D: "基準関連妥当性" }, answer: "B", exp: "再検査信頼性は同一の尺度を時間をおいて再度実施し、2回の得点の相関(安定性)を検討する信頼性の指標。項目間の一貫性を見る内的整合性(クロンバックのα係数など)とは異なる観点の信頼性。" }],
+    advanced: [{ q: "新しい心理尺度を作成する際、既存の確立された尺度との相関を検討することで確認する妥当性を何と呼ぶか。", choices: { A: "内容的妥当性", B: "基準関連妥当性(併存的妥当性)", C: "再検査信頼性", D: "内的整合性" }, answer: "B", exp: "新しい尺度が既存の確立された尺度(基準)とどの程度相関するかを検討することは、基準関連妥当性(併存的妥当性)の確認にあたり、構成概念妥当性を支持する証拠の一つとなる。" }],
+  },
+  8: {
+    basic: [{ q: "行動そのものではなく、行動の結果として残された痕跡や成果物(作文、作品など)を分析する観察法を何と呼ぶか。", choices: { A: "時間見本法", B: "産物記録法", C: "場面見本法", D: "事象見本法" }, answer: "B", exp: "産物記録法は、行動そのものではなく、行動の結果として残された痕跡や成果物(作文、作品、ゴミの量など)を分析する観察法の一種。" }],
+    intermediate: [{ q: "一定の時間間隔を区切り、その時間内に対象行動が生じたかどうかを記録する観察法を何と呼ぶか。", choices: { A: "産物記録法", B: "時間見本法", C: "自由記述観察", D: "構造化面接" }, answer: "B", exp: "時間見本法(タイムサンプリング)は、観察時間をあらかじめ一定間隔に区切り、各時間区間内に対象行動が生起したかどうかを記録する系統的な観察法。" }],
+    advanced: [{ q: "観察法において、複数の観察者が同一の行動を独立に記録した結果の一致度を検討することは、主に何を確認するためか。", choices: { A: "内容的妥当性", B: "観察の信頼性(観察者間一致率)", C: "標本の代表性", D: "統計的検定力" }, answer: "B", exp: "複数の観察者間で記録の一致度(観察者間一致率、カッパ係数など)を検討することは、観察記録が観察者の主観に左右されず安定しているかという観察の信頼性を確認するための代表的な方法。" }],
+  },
+  9: {
+    basic: [{ q: "観察によって得られた行動の生起頻度や持続時間などのデータを時系列で視覚的に表現する方法を何と呼ぶか。", choices: { A: "構造化面接", B: "グラフ化", C: "投影法", D: "テストバッテリー" }, answer: "B", exp: "観察データのグラフ化は、行動の生起頻度や持続時間の推移を折れ線グラフや棒グラフなどで視覚的に表現し、変化やパターンを把握しやすくする手法。" }],
+    intermediate: [{ q: "観察データを解析する際、記録された行動が本当に測定しようとしていた行動を捉えているかを検討する観点は何か。", choices: { A: "観察の信頼性", B: "観察の妥当性", C: "標本サイズ", D: "有意水準" }, answer: "B", exp: "観察の妥当性は、記録された行動指標が実際に測定したい対象行動を的確に反映しているかを問う観点であり、記録の一貫性を問う信頼性とは区別される。" }],
+    advanced: [{ q: "一事例(シングルケース)デザインにおいて、ベースライン期と介入期のグラフ上の水準やトレンドを目視で比較する分析方法を何と呼ぶか。", choices: { A: "統計的仮説検定", B: "視覚的分析", C: "クラスター分析", D: "因子分析" }, answer: "B", exp: "視覚的分析は、ベースライン期と介入期における観察データの水準・トレンド・変動性の変化をグラフ上で目視により比較検討する、一事例実験デザインで伝統的に用いられる解析方法。" }],
+  },
+  10: {
+    basic: [{ q: "面接者と対象者との間に築かれる、信頼に基づいた良好な関係を何と呼ぶか。", choices: { A: "ラポール", B: "構造化面接", C: "トランスクリプト", D: "投影法" }, answer: "A", exp: "ラポールは面接者と対象者の間に形成される信頼関係のことで、臨床的面接において対象者が率直に話せる基盤となる重要な要素。" }],
+    intermediate: [{ q: "うなずきや相槌、視線、沈黙の使い方など、非言語的コミュニケーションを含む具体的な面接技法を体系化したものを何と呼ぶか。", choices: { A: "構造化面接", B: "マイクロカウンセリング", C: "産物記録法", D: "尺度構成法" }, answer: "B", exp: "マイクロカウンセリングは、うなずき・視線・相槌などの非言語的コミュニケーションを含む具体的な面接技法を体系化したものであり、臨床的面接の基本技術として用いられる。" }],
+    advanced: [{ q: "臨床的面接において、単一または少数の事例について詳細な記述・分析を行う研究方法を何と呼ぶか。", choices: { A: "事例研究(ケーススタディ)", B: "構造化面接のみ", C: "ランダム化比較試験", D: "時間見本法" }, answer: "A", exp: "事例研究は、単一または少数の事例(ケース)について、面接や観察を通じて得られた情報を詳細に記述・分析する研究方法であり、臨床心理学において重要な知見の蓄積方法の一つ。" }],
+  },
+  11: {
+    basic: [{ q: "あらかじめ質問項目・順序が厳密に定められており、面接者がそれに沿って一律に質問を行う面接法を何と呼ぶか。", choices: { A: "構造化面接", B: "半構造化面接", C: "非構造化面接", D: "臨床的面接のみ" }, answer: "A", exp: "構造化面接は質問項目や順序があらかじめ厳密に決められており、すべての対象者に同じ手順で質問する面接法。回答の比較がしやすい一方、柔軟性は低い。" }],
+    intermediate: [{ q: "大まかな質問の枠組みは決めておくが、対象者の回答に応じて質問の順序や深掘りの仕方を柔軟に変える面接法を何と呼ぶか。", choices: { A: "構造化面接", B: "半構造化面接", C: "非構造化面接", D: "投影法" }, answer: "B", exp: "半構造化面接は、基本的な質問項目は事前に用意しつつも、対象者の回答内容に応じて質問の順序や深掘りを柔軟に調整できる面接法で、構造化面接と非構造化面接の中間的な性質を持つ。" }],
+    advanced: [{ q: "面接で得られた音声データを文字に書き起こしたものを何と呼び、それは主にどのような分析に用いられるか。", choices: { A: "ラポール、量的分析のみ", B: "トランスクリプト、質的分析(内容分析やテーマ分析など)", C: "産物記録、時間見本法", D: "尺度得点、統計的仮説検定" }, answer: "B", exp: "トランスクリプトは面接で得られた音声データを文字化した記録であり、質的研究における内容分析やテーマ分析(thematic analysis)など、発言内容の意味を丁寧に読み解く質的分析に用いられることが多い。" }],
+  },
+  12: {
+    basic: [{ q: "一般知能や認知能力を測定することを目的とした検査を何と呼ぶか。", choices: { A: "パーソナリティ検査", B: "知能検査", C: "投影法検査", D: "構造化面接" }, answer: "B", exp: "知能検査(例:ウェクスラー式知能検査)は、言語性・動作性の課題などを通じて一般知能や認知能力の水準を測定することを目的とした検査。" }],
+    intermediate: [{ q: "あいまいな刺激(インクのしみや絵など)に対する反応から、対象者の無意識的な側面やパーソナリティを推測しようとする検査法を何と呼ぶか。", choices: { A: "質問紙法", B: "投影法", C: "知能検査", D: "時間見本法" }, answer: "B", exp: "投影法(ロールシャッハ・テストやTATなど)は、あいまいで多義的な刺激に対する反応内容を分析することで、対象者が意識していない側面を含むパーソナリティを推測しようとする検査法。" }],
+    advanced: [{ q: "目的に応じて複数の検査(知能検査・パーソナリティ検査など)を組み合わせて実施し、対象者を多面的に評価する方法を何と呼ぶか。", choices: { A: "単一検査法", B: "テストバッテリー", C: "産物記録法", D: "構造化面接のみ" }, answer: "B", exp: "テストバッテリーは、単一の検査だけでは捉えきれない対象者の多面的な特徴を把握するために、目的に応じて複数の検査を組み合わせて実施する方法であり、臨床現場のアセスメントで広く用いられる。" }],
+  },
+  13: {
+    basic: [{ q: "何らかの働きかけ(処置・プログラムなど)を行い、その効果を検証する研究を何と呼ぶか。", choices: { A: "観察研究", B: "介入研究", C: "相関研究", D: "事例研究のみ" }, answer: "B", exp: "介入研究は、対象者に対して意図的な働きかけ(治療、教育プログラムなど)を行い、その効果を検証することを目的とした研究。" }],
+    intermediate: [{ q: "参加者を無作為に介入群と対照群に割り付け、介入の効果を検証する研究デザインを何と呼ぶか。", choices: { A: "一事例実験デザイン", B: "ランダム化比較試験(RCT)", C: "自然観察法", D: "非構造化面接" }, answer: "B", exp: "ランダム化比較試験(RCT)は、参加者を無作為に介入群と対照群(統制群)に割り付けて介入の効果を検証するデザインで、介入の因果効果を検証する上で科学的に強いエビデンスを提供するとされる。" }],
+    advanced: [{ q: "少数の対象者(時には1人)を対象に、ベースライン期と介入期を設けて行動の変化を反復測定しながら介入効果を検証するデザインを何と呼ぶか。", choices: { A: "一事例実験デザイン(シングルケースデザイン)", B: "ランダム化比較試験", C: "質問紙調査", D: "投影法検査" }, answer: "A", exp: "一事例実験デザイン(シングルケースデザイン)は、少人数(時には1人)の対象者について、ベースライン期と介入期を設定し反復的に測定を行うことで、統計的検定に頼らずグラフ上の変化から介入効果を検証する手法で、臨床・教育・ABAの現場で広く用いられる。" }],
+  },
+  14: {
+    basic: [{ q: "研究を実施する前に、研究計画が倫理的に適切かどうかを第三者機関が事前に検討する手続きを何と呼ぶか。", choices: { A: "統計的仮説検定", B: "倫理審査", C: "サンプリング", D: "視覚的分析" }, answer: "B", exp: "倫理審査は、研究計画が対象者の権利や福祉を侵害しないか、インフォームド・コンセントなどが適切に行われるかを、研究実施前に倫理審査委員会などの第三者機関が検討する手続き。" }],
+    intermediate: [{ q: "p-hackingやHARKingなど、研究結果の信頼性を損なう望ましくない研究上の慣行を総称して何と呼ぶか。", choices: { A: "構成概念妥当性", B: "QRPs(疑わしい研究実践)", C: "再検査信頼性", D: "構造化面接" }, answer: "B", exp: "QRPs(Questionable Research Practices、疑わしい研究実践)は、p-hackingやHARKingなど、必ずしも不正とまでは言えないが研究結果の信頼性や再現可能性を損なうおそれのある研究上の慣行を指す総称。" }],
+    advanced: [{ q: "他の研究者が同じデータや手続きを用いて研究結果を確認できるよう、データや分析コードを公開する取り組みを何と呼び、これは心理学のどのような課題への対応として重視されているか。", choices: { A: "構造化面接、面接法の標準化", B: "オープンデータ(オープンサイエンス)、再現可能性の危機への対応", C: "投影法、検査法の妥当性向上", D: "ラポール形成、臨床実践の質向上" }, answer: "B", exp: "オープンデータ(オープンサイエンス)は、データや分析コード、研究の手続きを公開し、他の研究者による検証・再現を可能にする取り組みであり、近年心理学分野で問題視されている再現可能性の危機(再現性の低さ)への対応として重視されている。" }],
+  },
+  15: {
+    basic: [{ q: "研究倫理に関する事項を審査し、研究計画の適切性を判断する組織を何と呼ぶか。", choices: { A: "統計的仮説検定委員会", B: "研究倫理委員会", C: "サンプリング委員会", D: "観察者間一致率委員会" }, answer: "B", exp: "研究倫理委員会は、研究計画が対象者の人権や福祉を守り、倫理的に適切な手続きで実施されるかを審査する組織であり、多くの大学・研究機関、医療機関に設置されている。" }],
+    intermediate: [{ q: "臨床的な研究(患者やクライエントを対象とする研究)において、通常の心理学研究以上に特に配慮が求められる点として適切なものはどれか。", choices: { A: "対象者の脆弱性(病状や心理的負担)への配慮とインフォームド・コンセントの徹底", B: "統計的検定力の向上のみ", C: "標本サイズを可能な限り大きくすることのみ", D: "観察者間一致率を高めることのみ" }, answer: "A", exp: "臨床的研究では、対象者が疾患や心理的困難を抱えている場合が多く、通常の研究以上に対象者の脆弱性への配慮や、十分な説明に基づく同意(インフォームド・コンセント)の徹底、治療への影響の考慮などが求められる。" }],
+    advanced: [{ q: "臨床的研究において、研究者が同時に治療者としての役割を担う場合など、対象者の治療上の利益を損なわないよう配慮すべき原則を何と呼ぶか。", choices: { A: "二重の関係(多重関係)の回避と対象者の利益の優先", B: "統計的仮説検定の厳密な適用", C: "サンプリングバイアスの最小化のみ", D: "観察の信頼性の確保のみ" }, answer: "A", exp: "臨床的研究では、研究者が同時に治療者としての役割を担う場合など、二重の関係(多重関係)が生じやすく、それが対象者の治療上の利益を損なわないよう配慮することが重要な倫理原則とされる。研究上の要請よりも対象者(クライエント)の福祉を優先する姿勢が求められる。" }],
+  },
 };
 
-export default function App() {
-  const [screen, setScreen] = useState("home");
-  const [selectedSession, setSelectedSession] = useState(2);
-  const [selectedDifficulty, setSelectedDifficulty] = useState("basic");
-  const [question, setQuestion] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [chosen, setChosen] = useState(null);
-  const [revealed, setRevealed] = useState(false);
-  const [sessionScore, setSessionScore] = useState({ correct: 0, total: 0 });
-  const [error, setError] = useState(null);
+// ── 状態 ──
+let selectedSession = 2;
+let selectedDifficulty = "basic";
+let sessionScore = { correct: 0, total: 0 };
+let currentQuestion = null;
+let chosen = null;
+let revealed = false;
 
-  const fetchQuestion = useCallback(async (sessionId, difficulty) => {
-    const sid = sessionId ?? selectedSession;
-    const diff = difficulty ?? selectedDifficulty;
-    const session = SESSIONS.find((s) => s.id === sid);
-    setLoading(true);
-    setQuestion(null);
-    setChosen(null);
-    setRevealed(false);
-    setError(null);
-    setScreen("quiz");
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1400,
-          messages: [{ role: "user", content: buildPrompt(session, diff) }],
-        }),
-      });
-      const data = await res.json();
-      const text = data.content?.find((b) => b.type === "text")?.text || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      setQuestion(parsed);
-    } catch (e) {
-      setError("問題の生成に失敗しました。もう一度お試しください。");
-      setScreen("home");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedSession, selectedDifficulty]);
+const homeScreen = document.getElementById("home-screen");
+const quizScreen = document.getElementById("quiz-screen");
+const sessionListEl = document.getElementById("session-list");
+const diffRowEl = document.getElementById("diff-row");
+const startBtn = document.getElementById("start-btn");
+const startSessionNumEl = document.getElementById("start-session-num");
+const backBtn = document.getElementById("back-btn");
+const sessionTagEl = document.getElementById("session-tag");
+const questionTextEl = document.getElementById("question-text");
+const choicesColEl = document.getElementById("choices-col");
+const expAreaEl = document.getElementById("exp-area");
+const errorTextEl = document.getElementById("error-text");
+const homeScorePillEl = document.getElementById("home-score-pill");
+const quizScorePillEl = document.getElementById("quiz-score-pill");
 
-  const handleChoice = (key) => {
-    if (revealed || loading) return;
-    setChosen(key);
-    setRevealed(true);
-    const isCorrect = key === question.answer;
-    setSessionScore((s) => ({
-      correct: s.correct + (isCorrect ? 1 : 0),
-      total: s.total + 1,
-    }));
-  };
-
-  const currentSession = SESSIONS.find((s) => s.id === selectedSession);
+function updateScorePills() {
   const pct = sessionScore.total > 0 ? Math.round((sessionScore.correct / sessionScore.total) * 100) : null;
-
-  // ── HOME ──
-  if (screen === "home") {
-    return (
-      <div style={s.page}>
-        <div style={s.card}>
-          <div style={s.headerRow}>
-            <span style={s.badge}>心理学研究法</span>
-            {pct !== null && (
-              <span style={{ ...s.scorePill, background: pct >= 70 ? "#e8f5ee" : "#fdecea", color: pct >= 70 ? "#1e7a4a" : "#c0392b" }}>
-                {sessionScore.correct}/{sessionScore.total} ({pct}%)
-              </span>
-            )}
-          </div>
-          <h1 style={s.title}>AI問題生成<br /><span style={s.titleAccent}>クイズ</span></h1>
-          <p style={s.subtitle}>回とレベルを選ぶだけ。毎回新しい問題と詳しい解説が出ます。</p>
-
-          <div style={s.sectionLabel}>回を選ぶ</div>
-          <div style={s.sessionList}>
-            {SESSIONS.map((session) => (
-              <button
-                key={session.id}
-                onClick={() => setSelectedSession(session.id)}
-                style={{
-                  ...s.sessionBtn,
-                  ...(selectedSession === session.id ? s.sessionBtnActive : {}),
-                }}
-              >
-                <span style={s.sessionNum}>{session.id}</span>
-                <span style={s.sessionTitle}>{session.title}</span>
-              </button>
-            ))}
-          </div>
-
-          <div style={s.sectionLabel}>難易度</div>
-          <div style={s.diffRow}>
-            {DIFFICULTY.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => setSelectedDifficulty(d.id)}
-                style={{
-                  ...s.diffBtn,
-                  ...(selectedDifficulty === d.id ? s.diffBtnActive : {}),
-                }}
-              >
-                <div style={s.diffLabel}>{d.label}</div>
-                <div style={s.diffDesc}>{d.desc}</div>
-              </button>
-            ))}
-          </div>
-
-          <button onClick={() => fetchQuestion()} style={s.startBtn}>
-            第{selectedSession}回の問題を生成 →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── QUIZ ──
-  return (
-    <div style={s.page}>
-      <div style={s.card}>
-        <div style={s.quizTopRow}>
-          <button onClick={() => setScreen("home")} style={s.backBtn}>← 回選択</button>
-          {pct !== null && (
-            <span style={{ ...s.scorePill, background: pct >= 70 ? "#e8f5ee" : "#fdecea", color: pct >= 70 ? "#1e7a4a" : "#c0392b" }}>
-              ✅ {sessionScore.correct}/{sessionScore.total}
-            </span>
-          )}
-        </div>
-
-        <div style={s.sessionTag}>
-          第{selectedSession}回｜{currentSession?.title}｜
-          {DIFFICULTY.find((d) => d.id === selectedDifficulty)?.label}
-        </div>
-
-        {loading && (
-          <div style={s.loadingBox}>
-            <svg width="40" height="40" viewBox="0 0 40 40">
-              <circle cx="20" cy="20" r="16" fill="none" stroke="#e6e0d8" strokeWidth="3" />
-              <circle cx="20" cy="20" r="16" fill="none" stroke="#8C5A3C" strokeWidth="3"
-                strokeDasharray="60 40" strokeLinecap="round">
-                <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.9s" repeatCount="indefinite" />
-              </circle>
-            </svg>
-            <p style={s.loadingText}>AIが問題と解説を生成しています…</p>
-          </div>
-        )}
-
-        {!loading && question && (
-          <>
-            <p style={s.questionText}>{question.question}</p>
-            <div style={s.choicesCol}>
-              {["A", "B", "C", "D"].map((key) => {
-                let style = { ...s.choiceBtn };
-                if (revealed) {
-                  if (key === question.answer) {
-                    style = { ...style, background: "#eafaf1", borderColor: "#2ecc71", color: "#1a6a3a" };
-                  } else if (key === chosen) {
-                    style = { ...style, background: "#fdecea", borderColor: "#e74c3c", color: "#a93226" };
-                  } else {
-                    style = { ...style, opacity: 0.5 };
-                  }
-                }
-                return (
-                  <button key={key} onClick={() => handleChoice(key)} style={style}>
-                    <span style={s.choiceKey}>{key}</span>
-                    <span>{question.choices[key]}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {revealed && (
-              <>
-                <div style={{
-                  ...s.expBox,
-                  borderLeft: `4px solid ${chosen === question.answer ? "#2ecc71" : "#e74c3c"}`,
-                }}>
-                  <div style={s.expResult}>
-                    {chosen === question.answer ? "🎉 正解！" : `❌ 不正解（正解: ${question.answer}）`}
-                  </div>
-                  <p style={s.expText}>{question.explanation}</p>
-                </div>
-                <div style={s.nextRow}>
-                  <button onClick={() => fetchQuestion()} style={s.nextBtn}>
-                    もう1問 →
-                  </button>
-                  <button onClick={() => setScreen("home")} style={s.changeBtn}>
-                    回を変える
-                  </button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {error && <p style={s.errorText}>{error}</p>}
-      </div>
-    </div>
-  );
+  [homeScorePillEl, quizScorePillEl].forEach((el) => {
+    if (pct === null) {
+      el.classList.add("hidden");
+      return;
+    }
+    el.classList.remove("hidden");
+    el.style.background = pct >= 70 ? "#e8f5ee" : "#fdecea";
+    el.style.color = pct >= 70 ? "#1e7a4a" : "#c0392b";
+    el.textContent = el === quizScorePillEl
+      ? `✅ ${sessionScore.correct}/${sessionScore.total}`
+      : `${sessionScore.correct}/${sessionScore.total} (${pct}%)`;
+  });
 }
 
-const s = {
-  page: {
-    minHeight: "100vh",
-    background: "#EFEAE2",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    padding: "20px 12px 40px",
-    fontFamily: "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif",
-  },
-  card: {
-    background: "#fff",
-    borderRadius: 18,
-    padding: "24px 20px",
-    width: "100%",
-    maxWidth: 540,
-    boxShadow: "0 2px 20px rgba(80,60,40,0.10)",
-  },
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  badge: {
-    background: "#8C5A3C",
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.06em",
-    borderRadius: 5,
-    padding: "3px 9px",
-  },
-  scorePill: {
-    fontSize: 12,
-    fontWeight: 700,
-    borderRadius: 20,
-    padding: "3px 11px",
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 800,
-    color: "#2b231c",
-    margin: "0 0 6px",
-    lineHeight: 1.25,
-  },
-  titleAccent: { color: "#8C5A3C" },
-  subtitle: {
-    fontSize: 12,
-    color: "#888",
-    margin: "0 0 22px",
-    lineHeight: 1.6,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: 800,
-    color: "#aaa",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  sessionList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 5,
-    marginBottom: 20,
-    maxHeight: 320,
-    overflowY: "auto",
-    borderRadius: 10,
-    border: "1px solid #ece5da",
-    padding: "4px",
-  },
-  sessionBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1.5px solid transparent",
-    background: "transparent",
-    cursor: "pointer",
-    textAlign: "left",
-  },
-  sessionBtnActive: {
-    background: "#f7f1e9",
-    border: "1.5px solid #8C5A3C",
-  },
-  sessionNum: {
-    fontSize: 11,
-    fontWeight: 800,
-    color: "#8C5A3C",
-    minWidth: 22,
-    background: "#f0e4d8",
-    borderRadius: 4,
-    padding: "2px 5px",
-    textAlign: "center",
-  },
-  sessionTitle: {
-    fontSize: 13,
-    color: "#333",
-    fontWeight: 500,
-  },
-  diffRow: {
-    display: "flex",
-    gap: 8,
-    marginBottom: 22,
-  },
-  diffBtn: {
-    flex: 1,
-    padding: "10px 6px",
-    borderRadius: 10,
-    border: "1.5px solid #e3dccf",
-    background: "#fff",
-    cursor: "pointer",
-    textAlign: "center",
-  },
-  diffBtnActive: {
-    border: "2px solid #4F7F8F",
-    background: "#f4f9fa",
-  },
-  diffLabel: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: "#333",
-    marginBottom: 2,
-  },
-  diffDesc: {
-    fontSize: 10,
-    color: "#999",
-  },
-  startBtn: {
-    width: "100%",
-    padding: "14px",
-    background: "#8C5A3C",
-    color: "#fff",
-    border: "none",
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  quizTopRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  backBtn: {
-    background: "none",
-    border: "none",
-    color: "#8C5A3C",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    padding: 0,
-  },
-  sessionTag: {
-    fontSize: 11,
-    color: "#888",
-    fontWeight: 600,
-    marginBottom: 18,
-    lineHeight: 1.5,
-  },
-  loadingBox: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "48px 0 40px",
-  },
-  loadingText: { color: "#999", fontSize: 13, marginTop: 12 },
-  questionText: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "#2b231c",
-    lineHeight: 1.75,
-    marginBottom: 18,
-  },
-  choicesCol: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 9,
-    marginBottom: 18,
-  },
-  choiceBtn: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: "12px 14px",
-    borderRadius: 10,
-    border: "1.5px solid #e3dccf",
-    background: "#fff",
-    cursor: "pointer",
-    fontSize: 13,
-    lineHeight: 1.55,
-    textAlign: "left",
-    color: "#222",
-  },
-  choiceKey: {
-    fontWeight: 800,
-    fontSize: 13,
-    minWidth: 18,
-    color: "#8C5A3C",
-    flexShrink: 0,
-  },
-  expBox: {
-    background: "#faf7f2",
-    borderRadius: 10,
-    padding: "14px 16px",
-    marginBottom: 16,
-  },
-  expResult: {
-    fontWeight: 700,
-    fontSize: 14,
-    marginBottom: 8,
-    color: "#2b231c",
-  },
-  expText: {
-    fontSize: 13,
-    color: "#555",
-    lineHeight: 1.8,
-    margin: 0,
-    whiteSpace: "pre-wrap",
-  },
-  nextRow: {
-    display: "flex",
-    gap: 8,
-  },
-  nextBtn: {
-    flex: 2,
-    padding: "13px",
-    background: "#8C5A3C",
-    color: "#fff",
-    border: "none",
-    borderRadius: 12,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  changeBtn: {
-    flex: 1,
-    padding: "13px",
-    background: "#f7f1e9",
-    color: "#8C5A3C",
-    border: "none",
-    borderRadius: 12,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  errorText: {
-    color: "#e74c3c",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 12,
-  },
-};
+function renderHome() {
+  sessionListEl.innerHTML = "";
+  SESSIONS.forEach((session) => {
+    const btn = document.createElement("button");
+    btn.className = "session-btn" + (selectedSession === session.id ? " active" : "");
+    btn.innerHTML = `<span class="session-num">${session.id}</span><span class="session-title">${session.title}</span>`;
+    btn.addEventListener("click", () => {
+      selectedSession = session.id;
+      renderHome();
+    });
+    sessionListEl.appendChild(btn);
+  });
+
+  diffRowEl.innerHTML = "";
+  DIFFICULTY.forEach((d) => {
+    const btn = document.createElement("button");
+    btn.className = "diff-btn" + (selectedDifficulty === d.id ? " active" : "");
+    btn.innerHTML = `<div class="diff-label">${d.label}</div><div class="diff-desc">${d.desc}</div>`;
+    btn.addEventListener("click", () => {
+      selectedDifficulty = d.id;
+      renderHome();
+    });
+    diffRowEl.appendChild(btn);
+  });
+
+  startSessionNumEl.textContent = selectedSession;
+  updateScorePills();
+}
+
+function pickQuestion(sessionId, difficulty) {
+  const pool = (QUESTIONS[sessionId] && QUESTIONS[sessionId][difficulty]) || [];
+  if (pool.length === 0) return null;
+  if (pool.length === 1) return pool[0];
+  let next;
+  do {
+    next = pool[Math.floor(Math.random() * pool.length)];
+  } while (next === currentQuestion && pool.length > 1);
+  return next;
+}
+
+function startQuiz() {
+  const session = SESSIONS.find((s) => s.id === selectedSession);
+  currentQuestion = pickQuestion(selectedSession, selectedDifficulty);
+  chosen = null;
+  revealed = false;
+  errorTextEl.classList.add("hidden");
+
+  homeScreen.classList.add("hidden");
+  quizScreen.classList.remove("hidden");
+
+  const diffLabel = DIFFICULTY.find((d) => d.id === selectedDifficulty)?.label;
+  sessionTagEl.textContent = `第${selectedSession}回｜${session.title}｜${diffLabel}`;
+
+  if (!currentQuestion) {
+    questionTextEl.textContent = "";
+    choicesColEl.innerHTML = "";
+    expAreaEl.innerHTML = "";
+    errorTextEl.textContent = "この回・難易度の問題はまだ準備中です。別の回や難易度を選んでください。";
+    errorTextEl.classList.remove("hidden");
+    updateScorePills();
+    return;
+  }
+
+  renderQuestion();
+}
+
+function renderQuestion() {
+  questionTextEl.textContent = currentQuestion.q;
+  choicesColEl.innerHTML = "";
+  expAreaEl.innerHTML = "";
+
+  ["A", "B", "C", "D"].forEach((key) => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    if (revealed) {
+      if (key === currentQuestion.answer) btn.classList.add("correct");
+      else if (key === chosen) btn.classList.add("wrong");
+      else btn.classList.add("dim");
+    }
+    btn.innerHTML = `<span class="choice-key">${key}</span><span>${currentQuestion.choices[key]}</span>`;
+    btn.addEventListener("click", () => handleChoice(key));
+    choicesColEl.appendChild(btn);
+  });
+
+  if (revealed) {
+    const isCorrect = chosen === currentQuestion.answer;
+    const box = document.createElement("div");
+    box.className = "exp-box";
+    box.style.borderLeft = `4px solid ${isCorrect ? "#2ecc71" : "#e74c3c"}`;
+    box.innerHTML = `
+      <div class="exp-result">${isCorrect ? "🎉 正解！" : `❌ 不正解（正解: ${currentQuestion.answer}）`}</div>
+      <p class="exp-text">${currentQuestion.exp}</p>
+    `;
+    expAreaEl.appendChild(box);
+
+    const nextRow = document.createElement("div");
+    nextRow.className = "next-row";
+    nextRow.innerHTML = `
+      <button class="next-btn" id="next-q-btn">もう1問 →</button>
+      <button class="change-btn" id="change-session-btn">回を変える</button>
+    `;
+    expAreaEl.appendChild(nextRow);
+
+    document.getElementById("next-q-btn").addEventListener("click", startQuiz);
+    document.getElementById("change-session-btn").addEventListener("click", goHome);
+  }
+
+  updateScorePills();
+}
+
+function handleChoice(key) {
+  if (revealed) return;
+  chosen = key;
+  revealed = true;
+  const isCorrect = key === currentQuestion.answer;
+  sessionScore = { correct: sessionScore.correct + (isCorrect ? 1 : 0), total: sessionScore.total + 1 };
+  renderQuestion();
+}
+
+function goHome() {
+  quizScreen.classList.add("hidden");
+  homeScreen.classList.remove("hidden");
+  renderHome();
+}
+
+startBtn.addEventListener("click", startQuiz);
+backBtn.addEventListener("click", goHome);
+
+renderHome();
+</script>
+</body>
+</html>
