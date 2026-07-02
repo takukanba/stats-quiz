@@ -1,21 +1,246 @@
-import { useState, useCallback } from "react";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心理学統計法 AI問題生成クイズ</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #E7EEEC;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px 12px 40px;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  }
+  .card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 2px 20px rgba(60,90,100,0.10);
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .badge {
+    background: #4F7F8F;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    border-radius: 5px;
+    padding: 3px 9px;
+  }
+  .score-pill {
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 3px 11px;
+  }
+  h1.title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #1a2f38;
+    margin: 0 0 6px;
+    line-height: 1.25;
+  }
+  .title-accent { color: #4F7F8F; }
+  .subtitle {
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 22px;
+    line-height: 1.6;
+  }
+  .section-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #aaa;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 20px;
+    max-height: 320px;
+    overflow-y: auto;
+    border-radius: 10px;
+    border: 1px solid #e8eef0;
+    padding: 4px;
+  }
+  .session-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+  }
+  .session-btn.active {
+    background: #f0f6f8;
+    border: 1.5px solid #4F7F8F;
+  }
+  .session-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: #4F7F8F;
+    min-width: 22px;
+    background: #e8f2f5;
+    border-radius: 4px;
+    padding: 2px 5px;
+    text-align: center;
+  }
+  .session-title { font-size: 13px; color: #333; font-weight: 500; }
+  .diff-row { display: flex; gap: 8px; margin-bottom: 22px; }
+  .diff-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 10px;
+    border: 1.5px solid #dde5e8;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    font-family: inherit;
+  }
+  .diff-btn.active { border: 2px solid #E8A164; background: #fff9f4; }
+  .diff-label { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 2px; }
+  .diff-desc { font-size: 10px; color: #999; }
+  .start-btn, .next-btn {
+    width: 100%;
+    padding: 14px;
+    background: #4F7F8F;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .quiz-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    color: #4F7F8F;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+  }
+  .session-tag { font-size: 11px; color: #888; font-weight: 600; margin-bottom: 18px; line-height: 1.5; }
+  .question-text { font-size: 15px; font-weight: 700; color: #1a2f38; line-height: 1.75; margin-bottom: 18px; }
+  .choices-col { display: flex; flex-direction: column; gap: 9px; margin-bottom: 18px; }
+  .choice-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #dde5e8;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.55;
+    text-align: left;
+    color: #222;
+    width: 100%;
+    font-family: inherit;
+  }
+  .choice-btn.correct { background: #eafaf1; border-color: #2ecc71; color: #1a6a3a; }
+  .choice-btn.wrong { background: #fdecea; border-color: #e74c3c; color: #a93226; }
+  .choice-btn.dim { opacity: 0.5; }
+  .choice-key { font-weight: 800; font-size: 13px; min-width: 18px; color: #4F7F8F; flex-shrink: 0; }
+  .exp-box { background: #f7fafb; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .exp-result { font-weight: 700; font-size: 14px; margin-bottom: 8px; color: #1a2f38; }
+  .exp-text { font-size: 13px; color: #555; line-height: 1.7; margin: 0; }
+  .next-row { display: flex; gap: 8px; }
+  .next-row .next-btn { flex: 2; padding: 13px; font-size: 13px; }
+  .change-btn {
+    flex: 1;
+    padding: 13px;
+    background: #f0f6f8;
+    color: #4F7F8F;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
 
+  <!-- HOME SCREEN -->
+  <div id="home-screen">
+    <div class="header-row">
+      <span class="badge">心理学統計法</span>
+      <span id="home-score-pill" class="score-pill hidden"></span>
+    </div>
+    <h1 class="title">AI問題生成<br><span class="title-accent">クイズ</span></h1>
+    <p class="subtitle">回とレベルを選ぶだけ。毎回ランダムに問題が出ます。</p>
+    <div class="section-label">回を選ぶ</div>
+    <div class="session-list" id="session-list"></div>
+    <div class="section-label">難易度</div>
+    <div class="diff-row" id="diff-row"></div>
+    <button class="start-btn" id="start-btn">第<span id="start-session-num"></span>回の問題を開始 →</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quiz-screen" class="hidden">
+    <div class="quiz-top-row">
+      <button class="back-btn" id="back-btn">← 回選択</button>
+      <span id="quiz-score-pill" class="score-pill hidden"></span>
+    </div>
+    <div class="session-tag" id="session-tag"></div>
+    <p class="question-text" id="question-text"></p>
+    <div class="choices-col" id="choices-col"></div>
+    <div id="exp-area"></div>
+    <p id="error-text" style="color:#e74c3c;font-size:12px;text-align:center;margin-top:12px;" class="hidden"></p>
+  </div>
+
+</div>
+
+<script>
 const SESSIONS = [
-  { id: 1, title: "心理学統計法を学ぶにあたって", keywords: "データ、変数、記述統計学、推測統計学、因果推論、積み上げ式、数式の和" },
-  { id: 2, title: "データの尺度水準と可視化", keywords: "尺度水準、量的データ、質的データ、可視化" },
-  { id: 3, title: "要約統計量", keywords: "要約、要約統計量、代表値、散布度、平均値、中央値、最頻値、標準偏差、四分位偏差" },
-  { id: 4, title: "２変数間の関係", keywords: "散布図、共分散、相関係数、クロス集計表、χ2値、クラメールの連関係数" },
-  { id: 5, title: "直線回帰", keywords: "回帰分析、回帰直線、決定係数、残差" },
-  { id: 6, title: "偏相関係数と因果効果", keywords: "因果推論、疑似相関、交絡、共変量、偏相関係数、統制群と実験群、無作為割当、平均因果効果" },
-  { id: 7, title: "母集団と標本", keywords: "推測統計学、母集団、標本、確率、確率変数、確率分布、無作為抽出、標本統計量、標本分布" },
-  { id: 8, title: "確率モデルを用いた区間推定の考え方", keywords: "確率モデル、正規分布、期待値、標準誤差、区間推定、信頼度、信頼区間" },
-  { id: 9, title: "母平均の区間推定", keywords: "推定量、推定値、不偏性、母分散が未知のときの区間推定、標準化、標準正規分布、t分布、t値、自由度" },
-  { id: 10, title: "２変数の関係を表す統計量の推定", keywords: "相関係数、クラメールの連関係数、区間推定、95%信頼区間" },
-  { id: 11, title: "２条件の平均値の差の推定", keywords: "2条件の平均値の差、標準化平均値差、区間推定、対応あり・なし" },
-  { id: 12, title: "統計的検定", keywords: "統計的検定、帰無仮説、対立仮説、検定統計量、帰無分布、棄却域、有意水準、p値、統計的誤りの確率、2群の平均値差の検定、無相関検定、独立性の検定" },
-  { id: 13, title: "３つ以上の平均値差の検定", keywords: "検定の繰り返し、有意水準の調整、分散分析、F分布" },
-  { id: 14, title: "対応のある３つ以上の平均値差の検定", keywords: "分散分析、F分布、多重比較、球面性の仮定" },
-  { id: 15, title: "統計的分析の注意点", keywords: "確率モデルの仮定、独立同分布の仮定、等分散の仮定、球面性の仮定、統計的検定の誤用、p hacking、HARKing" },
+  { id: 1, title: "心理学統計法を学ぶにあたって" },
+  { id: 2, title: "データの尺度水準と可視化" },
+  { id: 3, title: "要約統計量" },
+  { id: 4, title: "２変数間の関係" },
+  { id: 5, title: "直線回帰" },
+  { id: 6, title: "偏相関係数と因果効果" },
+  { id: 7, title: "母集団と標本" },
+  { id: 8, title: "確率モデルを用いた区間推定の考え方" },
+  { id: 9, title: "母平均の区間推定" },
+  { id: 10, title: "２変数の関係を表す統計量の推定" },
+  { id: 11, title: "２条件の平均値の差の推定" },
+  { id: 12, title: "統計的検定" },
+  { id: 13, title: "３つ以上の平均値差の検定" },
+  { id: 14, title: "対応のある３つ以上の平均値差の検定" },
+  { id: 15, title: "統計的分析の注意点" },
 ];
 
 const DIFFICULTY = [
@@ -24,491 +249,253 @@ const DIFFICULTY = [
   { id: "advanced", label: "難問", desc: "深い理解・応用" },
 ];
 
-const buildPrompt = (session, difficulty) => {
-  const diffLabel = DIFFICULTY.find((d) => d.id === difficulty)?.label;
-  const diffDesc = DIFFICULTY.find((d) => d.id === difficulty)?.desc;
-  return `あなたは心理学統計法の試験問題作成の専門家です。
-
-以下の条件で問題を1問作成してください：
-
-【対象トピック】第${session.id}回「${session.title}」
-【キーワード】${session.keywords}
-【難易度】${diffLabel}（${diffDesc}）
-【形式】4択問題（選択肢A〜D）
-
-重要な指示：
-- キーワードに含まれる概念から出題すること
-- 統計学の試験に実際に出そうなリアルな問題にする
-- 選択肢は紛らわしいが明確に正誤が分かるものにする
-- 日本語で書く
-
-必ず以下のJSON形式のみで返答してください（余分なテキスト・マークダウン不可）:
-{
-  "question": "問題文",
-  "choices": {
-    "A": "選択肢A",
-    "B": "選択肢B",
-    "C": "選択肢C",
-    "D": "選択肢D"
+// 問題バンク: QUESTIONS[sessionId][difficulty] = [ {q, choices:{A,B,C,D}, answer, exp}, ... ]
+const QUESTIONS = {
+  1: {
+    basic: [{ q: "心理学において、収集したデータの特徴を要約し記述する統計学の分野を何というか。", choices: { A: "記述統計学", B: "推測統計学", C: "因果推論", D: "確率論" }, answer: "A", exp: "記述統計学はデータの特徴(代表値や散布度など)を要約・記述する分野。推測統計学は標本から母集団の性質を推測する分野。" }],
+    intermediate: [{ q: "標本から得られたデータをもとに、母集団の性質について結論を導く統計学の分野はどれか。", choices: { A: "記述統計学", B: "推測統計学", C: "因果推論のみ", D: "可視化技法" }, answer: "B", exp: "推測統計学は標本データから母集団の特徴を推測する分野。記述統計学はデータそのものを要約するにとどまる。" }],
+    advanced: [{ q: "ある変数が別の変数に与える効果を、単なる相関ではなく「原因と結果」の関係として明らかにしようとする統計的アプローチを何と呼ぶか。", choices: { A: "記述統計", B: "尺度水準の分類", C: "因果推論", D: "可視化" }, answer: "C", exp: "因果推論は、単なる相関関係ではなく変数間の因果関係を明らかにすることを目的とした統計的枠組み。相関があっても因果があるとは限らない点に注意が必要。" }],
   },
-  "answer": "正解（A/B/C/Dのいずれか1文字のみ）",
-  "explanation": "解説（なぜその答えが正しく、他の選択肢が誤りかを2〜4文で丁寧に説明）"
-}`;
+  2: {
+    basic: [{ q: "「性別」や「血液型」のように、順序や大小関係を持たないカテゴリーを表す尺度水準は何か。", choices: { A: "名義尺度", B: "順序尺度", C: "間隔尺度", D: "比率尺度" }, answer: "A", exp: "名義尺度はカテゴリを区別するだけで大小関係を持たない。順序尺度は順位づけが可能、間隔尺度・比率尺度は数値の差や比に意味がある。" }],
+    intermediate: [{ q: "「摂氏温度」のように、目盛りの間隔は等しいが原点(0)が絶対的な意味を持たない尺度水準は何か。", choices: { A: "名義尺度", B: "順序尺度", C: "間隔尺度", D: "比率尺度" }, answer: "C", exp: "間隔尺度は差に意味があるが比には意味がない(0度は「無」を意味しない)。比率尺度は絶対原点を持ち、比にも意味がある(例:身長・体重)。" }],
+    advanced: [{ q: "質的データと量的データを可視化する際の組み合わせとして、最も適切なものはどれか。", choices: { A: "質的データには散布図、量的データには円グラフ", B: "質的データには棒グラフ・円グラフ、量的データにはヒストグラム・箱ひげ図", C: "両方とも折れ線グラフのみを用いる", D: "尺度水準に関わらず同じグラフを用いる" }, answer: "B", exp: "質的データ(カテゴリ)は度数を示す棒グラフや円グラフが適し、量的データは分布形状を示すヒストグラムや箱ひげ図が適している。" }],
+  },
+  3: {
+    basic: [{ q: "データの中心的な位置を表す統計量を何と呼ぶか。", choices: { A: "代表値", B: "散布度", C: "相関係数", D: "信頼区間" }, answer: "A", exp: "代表値は平均値・中央値・最頻値などデータの中心的傾向を表す。散布度はデータのばらつきを表す。" }],
+    intermediate: [{ q: "外れ値の影響を受けにくい代表値はどれか。", choices: { A: "平均値", B: "中央値", C: "標準偏差", D: "分散" }, answer: "B", exp: "中央値はデータを大小順に並べた際の真ん中の値であり、極端な外れ値の影響を受けにくい。平均値は外れ値の影響を強く受ける。" }],
+    advanced: [{ q: "あるデータの標準偏差が0であるとき、そのデータについて言えることはどれか。", choices: { A: "すべての値が同じである", B: "外れ値が存在する", C: "分布が正規分布である", D: "中央値が存在しない" }, answer: "A", exp: "標準偏差は散布度(ばらつき)を表す指標であり、0になるのはすべてのデータ値が等しい場合のみ。" }],
+  },
+  4: {
+    basic: [{ q: "2つの量的変数間の直線的な関連の強さと方向を表す指標は何か。", choices: { A: "共分散", B: "相関係数", C: "χ2値", D: "クラメールの連関係数" }, answer: "B", exp: "相関係数は-1から1の範囲をとり、2変数間の直線的な関係の強さと方向を表す標準化された指標。共分散は単位に依存するため直接比較しにくい。" }],
+    intermediate: [{ q: "2つの質的変数(カテゴリ変数)間の関連の強さを表す統計量はどれか。", choices: { A: "相関係数", B: "回帰係数", C: "クラメールの連関係数", D: "決定係数" }, answer: "C", exp: "クラメールの連関係数はクロス集計表におけるχ2値をもとに算出され、質的変数間の関連の強さを0〜1の範囲で表す。" }],
+    advanced: [{ q: "相関係数が0であるとき、必ず言えることはどれか。", choices: { A: "2変数は完全に無関係である", B: "2変数間に因果関係はない", C: "2変数間に直線的な関係は見られない(非直線的な関係の可能性は残る)", D: "2変数は独立である" }, answer: "C", exp: "相関係数はあくまで「直線的な関係」の強さを表す指標。相関係数が0でも、U字型など非直線的な関係が存在する可能性がある。" }],
+  },
+  5: {
+    basic: [{ q: "1つの説明変数から1つの目的変数を予測する直線の式を求める分析手法を何と呼ぶか。", choices: { A: "因子分析", B: "回帰分析", C: "分散分析", D: "クラスター分析" }, answer: "B", exp: "回帰分析は説明変数(独立変数)から目的変数(従属変数)を予測する直線(回帰直線)を求める分析手法。" }],
+    intermediate: [{ q: "回帰直線が目的変数の変動をどの程度説明できているかを表す指標を何と呼ぶか。", choices: { A: "標準誤差", B: "決定係数", C: "標準偏差", D: "自由度" }, answer: "B", exp: "決定係数(R²)は回帰モデルが目的変数の分散をどの程度説明できているかを0〜1の範囲で示す指標。1に近いほど当てはまりが良い。" }],
+    advanced: [{ q: "回帰分析における「残差」とは何を指すか。", choices: { A: "説明変数の平均値", B: "実測値と回帰直線による予測値との差", C: "目的変数の分散", D: "相関係数の二乗" }, answer: "B", exp: "残差は実測値から回帰直線による予測値を引いた差であり、回帰モデルで説明しきれなかった部分を表す。残差の二乗和を最小にするのが最小二乗法。" }],
+  },
+  6: {
+    basic: [{ q: "実際には因果関係がないにもかかわらず、第三の変数(交絡変数)の影響によって見かけ上相関があるように見える現象を何と呼ぶか。", choices: { A: "偏相関", B: "疑似相関", C: "標準化", D: "無作為割当" }, answer: "B", exp: "疑似相関(見せかけの相関)は、共通の原因となる交絡変数の存在によって、実際には無関係な2変数間に相関が生じて見える現象。" }],
+    intermediate: [{ q: "第三の変数の影響を取り除いた上で、2変数間の純粋な関連を表す統計量を何と呼ぶか。", choices: { A: "相関係数", B: "偏相関係数", C: "決定係数", D: "クラメールの連関係数" }, answer: "B", exp: "偏相関係数は、交絡の可能性がある第三の変数(共変量)の影響を統制した上で算出される2変数間の関連の強さ。" }],
+    advanced: [{ q: "因果効果を推定する上で、参加者を無作為に統制群と実験群に割り当てる(無作為割当)理由として最も適切なものはどれか。", choices: { A: "サンプルサイズを増やすため", B: "既知・未知の交絡変数の影響を両群で均等化し、群間の差を処置の効果と解釈できるようにするため", C: "データの尺度水準を揃えるため", D: "相関係数を1に近づけるため" }, answer: "B", exp: "無作為割当により、既知・未知を問わずあらゆる交絡変数の分布が両群でほぼ均等になるため、群間の結果の差を処置(原因)による因果効果として解釈しやすくなる。" }],
+  },
+  7: {
+    basic: [{ q: "研究者が関心を持つ、調査や分析の対象となる全体の集団を何と呼ぶか。", choices: { A: "標本", B: "母集団", C: "標本統計量", D: "標本分布" }, answer: "B", exp: "母集団は研究対象となる全体の集合であり、実際に調査可能な母集団の一部を標本(サンプル)と呼ぶ。" }],
+    intermediate: [{ q: "母集団から標本を抽出する際、母集団のすべての要素が等しい確率で選ばれるように抽出する方法を何と呼ぶか。", choices: { A: "有意抽出", B: "無作為抽出", C: "便宜的抽出", D: "任意抽出" }, answer: "B", exp: "無作為抽出(ランダムサンプリング)は、母集団の各要素が等しい確率で標本に選ばれるようにする抽出法で、標本の代表性を高める基本的な方法。" }],
+    advanced: [{ q: "同じ母集団から同じサイズの標本を繰り返し無作為抽出したときに得られる標本統計量(例:標本平均)の分布を何と呼ぶか。", choices: { A: "母集団分布", B: "確率分布", C: "標本分布", D: "正規分布" }, answer: "C", exp: "標本分布とは、同一の母集団から同じサイズの標本を理論上繰り返し抽出した際に得られる、ある標本統計量(標本平均など)の分布のこと。推測統計の理論的基盤となる。" }],
+  },
+  8: {
+    basic: [{ q: "母集団から得られる値のばらつきを数学的に表現したものを何と呼ぶか。", choices: { A: "確率モデル", B: "代表値", C: "相関係数", D: "決定係数" }, answer: "A", exp: "確率モデルはデータが従うと仮定される確率分布(正規分布など)を用いて母集団の性質を数学的に表現したもの。" }],
+    intermediate: [{ q: "標本平均の標準偏差に相当し、標本平均のばらつきの大きさを表す指標を何と呼ぶか。", choices: { A: "標準偏差", B: "標準誤差", C: "分散", D: "相関係数" }, answer: "B", exp: "標準誤差(SE)は標本統計量(標本平均など)の標本分布の標準偏差であり、標本サイズが大きいほど小さくなる。" }],
+    advanced: [{ q: "95%信頼区間の正しい解釈はどれか。", choices: { A: "母平均が区間内に入る確率が95%である", B: "標本平均が区間内に入る確率が95%である", C: "同じ手続きで繰り返し標本抽出し信頼区間を作成した場合、その約95%が真の母数を含むと期待される", D: "データの95%がその区間に含まれる" }, answer: "C", exp: "信頼区間は、同じ手続きを繰り返した場合に真の母数を含む区間が得られる割合についての性質であり、「母数がその区間に入る確率」という解釈は頻度論的には誤り。" }],
+  },
+  9: {
+    basic: [{ q: "母集団のパラメータ(母数)を1つの値で推定することを何と呼ぶか。", choices: { A: "区間推定", B: "点推定", C: "仮説検定", D: "標準化" }, answer: "B", exp: "点推定は母数を1つの具体的な値(推定値)で推定すること。区間推定は母数が含まれると期待される範囲(区間)で推定すること。" }],
+    intermediate: [{ q: "母分散が未知の場合、母平均の区間推定において正規分布の代わりに用いられる分布は何か。", choices: { A: "χ2分布", B: "F分布", C: "t分布", D: "二項分布" }, answer: "C", exp: "母分散が未知で標本から推定する必要がある場合、標準化した統計量はt分布に従う。標本サイズが大きくなるとt分布は正規分布に近づく。" }],
+    advanced: [{ q: "t分布における「自由度」について正しい説明はどれか。", choices: { A: "標本サイズと同じ値である", B: "標本サイズから1を引いた値であり、分布の形状(裾の広さ)を決める", C: "常に無限大である", D: "信頼度と同じ値である" }, answer: "B", exp: "1標本のt分布における自由度は標本サイズnから1を引いた値(n-1)。自由度が小さいほど裾が広く(分散が大きく)なり、自由度が大きくなるほど正規分布に近づく。" }],
+  },
+  10: {
+    basic: [{ q: "標本から得られた相関係数をもとに、母集団における相関係数を区間で推定することを何と呼ぶか。", choices: { A: "相関係数の点推定", B: "相関係数の区間推定", C: "回帰分析", D: "分散分析" }, answer: "B", exp: "標本相関係数は母相関係数の推定値に過ぎず、標本から母集団の相関係数がどの範囲にあるかを区間として推定するのが相関係数の区間推定。" }],
+    intermediate: [{ q: "相関係数の区間推定において、区間の幅が狭くなる(推定の精度が高まる)条件として適切なものはどれか。", choices: { A: "標本サイズが小さいほど", B: "標本サイズが大きいほど", C: "有意水準を大きくするほど", D: "カテゴリ数を増やすほど常に" }, answer: "B", exp: "一般に標本サイズが大きいほど推定値の標準誤差は小さくなり、信頼区間の幅は狭く(推定精度は高く)なる。" }],
+    advanced: [{ q: "ある研究で相関係数の95%信頼区間が[0.10, 0.55]と算出された場合、この結果から言えることはどれか。", choices: { A: "母相関係数は必ず0.325である", B: "母相関係数が0である可能性は低いと解釈できる", C: "相関は存在しない", D: "サンプルサイズに関わらず結果は変わらない" }, answer: "B", exp: "信頼区間が0を含まない場合、母相関係数が0(無相関)である可能性は低いと解釈でき、対応する有意水準での仮説検定において有意な相関があるという結果と整合的になる。" }],
+  },
+  11: {
+    basic: [{ q: "2つの独立した群(例:A群とB群)の平均値の差を推定する際に用いる統計量は何か。", choices: { A: "相関係数", B: "2条件の平均値の差", C: "決定係数", D: "クラメールの連関係数" }, answer: "B", exp: "独立した2群の平均値の差を標本から算出し、その差が母集団においてどの程度かを推定するのが「2条件の平均値の差の推定」。" }],
+    intermediate: [{ q: "異なる尺度で測定された効果量を比較できるように、平均値差を標準偏差で割って標準化した指標を何と呼ぶか。", choices: { A: "t値", B: "標準化平均値差(効果量d)", C: "決定係数", D: "p値" }, answer: "B", exp: "標準化平均値差(Cohenのdなど)は平均値差を標準偏差で割ることで単位に依存しない形にした効果量であり、効果の大きさを解釈しやすくする。" }],
+    advanced: [{ q: "同じ対象者に処置前後で測定を行う「対応あり」のデザインが、「対応なし」のデザインに比べて平均値差の検出力が高くなりやすい理由として最も適切なものはどれか。", choices: { A: "サンプルサイズが自動的に2倍になるため", B: "個人差による変動を差分として取り除けるため、誤差分散が小さくなるから", C: "常に正規分布に従うため", D: "標準偏差が常に0になるため" }, answer: "B", exp: "対応ありデザインでは同一個人内の変化を見るため、個人差(個人間のばらつき)の影響が差分計算の中で相殺され、誤差分散が小さくなり検出力が高まりやすい。" }],
+  },
+  12: {
+    basic: [{ q: "「差がない」「関連がない」など、検定によって棄却されることを期待して立てる仮説を何と呼ぶか。", choices: { A: "対立仮説", B: "帰無仮説", C: "作業仮説", D: "代替仮説" }, answer: "B", exp: "帰無仮説(H0)は「効果がない」「差がない」という仮説であり、統計的検定はこれを棄却できるかどうかを検討する。棄却された場合に対立仮説が支持される。" }],
+    intermediate: [{ q: "帰無仮説が真であるにもかかわらず、それを誤って棄却してしまう誤りを何と呼ぶか。", choices: { A: "第2種の誤り", B: "第1種の誤り", C: "標準誤差", D: "検定力の誤り" }, answer: "B", exp: "第1種の誤り(αエラー)は帰無仮説が真なのに棄却してしまう誤り。有意水準αはこの誤りを犯す確率の上限を表す。逆に帰無仮説が偽なのに棄却しない誤りは第2種の誤り(βエラー)と呼ばれる。" }],
+    advanced: [{ q: "p値の正しい解釈として最も適切なものはどれか。", choices: { A: "帰無仮説が正しい確率", B: "対立仮説が正しい確率", C: "帰無仮説が真であると仮定したときに、実際に観測された結果以上に極端な結果が得られる確率", D: "効果量の大きさ" }, answer: "C", exp: "p値は「帰無仮説が真である」という前提のもとで、観測されたデータ以上に極端な結果が生じる確率であり、帰無仮説が正しい確率そのものではない点に注意が必要。" }],
+  },
+  13: {
+    basic: [{ q: "3つ以上の群の平均値に差があるかどうかを一度に検討する統計手法を何と呼ぶか。", choices: { A: "t検定", B: "分散分析(ANOVA)", C: "相関分析", D: "回帰分析" }, answer: "B", exp: "分散分析(ANOVA)は3つ以上の群の平均値の差を、群間分散と群内分散の比(F値)を用いて一括して検定する手法。" }],
+    intermediate: [{ q: "3群以上の比較で、2群間のt検定を繰り返し行う代わりに分散分析を用いる主な理由はどれか。", choices: { A: "計算が簡単になるから", B: "検定を繰り返すことで全体としての第1種の誤りが増えてしまう問題を避けるため", C: "標本サイズが自動的に増えるから", D: "相関係数を求める必要がなくなるから" }, answer: "B", exp: "2群間の検定を何度も繰り返すと、全体として偶然有意になってしまう確率(第1種の誤り)が積み重なって増加してしまう。分散分析はこれを避け、全体の差を一括して検定する。" }],
+    advanced: [{ q: "分散分析で用いられる検定統計量であるF値の性質として正しいものはどれか。", choices: { A: "群間分散を群内分散で割った比であり、F分布に従う", B: "常に0から1の範囲をとる", C: "相関係数と同じ意味を持つ", D: "標本サイズに関わらず一定の値をとる" }, answer: "A", exp: "F値は群間分散(処置による変動)を群内分散(誤差による変動)で割った比であり、この比がF分布に従うことを利用して群間に有意な差があるかを検定する。" }],
+  },
+  14: {
+    basic: [{ q: "同一対象者に3回以上の測定を行った場合の平均値差を検定する分散分析を何と呼ぶか。", choices: { A: "一元配置分散分析(対応なし)", B: "反復測定分散分析(対応あり)", C: "単純なt検定", D: "カイ二乗検定" }, answer: "B", exp: "反復測定分散分析(対応のある分散分析)は、同一の対象者を複数回測定したデータにおける平均値差を検討する手法であり、個人内の変動を考慮できる。" }],
+    intermediate: [{ q: "分散分析で有意差が見られた後、どの群間に具体的な差があるかを個別に検討する手続きを何と呼ぶか。", choices: { A: "主効果分析", B: "多重比較", C: "単純な相関分析", D: "標準化" }, answer: "B", exp: "多重比較(post-hoc検定)は、分散分析で全体的な有意差が確認された後、どのペアの群間に有意な差があるかを、第1種の誤りの増大を調整しながら検討する手続き。" }],
+    advanced: [{ q: "対応のある3群以上の分散分析において、通常のF検定を用いるために満たすべきとされる、各条件間の差の分散が等しいという仮定を何と呼ぶか。", choices: { A: "等分散性の仮定", B: "独立性の仮定", C: "球面性の仮定", D: "正規性の仮定" }, answer: "C", exp: "球面性の仮定は、反復測定分散分析において各水準間の差得点の分散が等しいことを求める仮定。この仮定が崩れると検定結果が歪む可能性があり、補正(Greenhouse-Geisser補正など)が必要になる。" }],
+  },
+  15: {
+    basic: [{ q: "統計的検定を行う際、データが独立に同じ確率分布から得られていることを仮定することを何と呼ぶか。", choices: { A: "等分散の仮定", B: "独立同分布(i.i.d.)の仮定", C: "球面性の仮定", D: "正規性の仮定のみ" }, answer: "B", exp: "独立同分布(独立かつ同一分布に従う)の仮定は、多くの統計的検定の基盤となる基本的な前提であり、これが崩れると検定結果の妥当性が損なわれる。" }],
+    intermediate: [{ q: "有意な結果が得られるまで、何度もデータを追加したり異なる分析方法を試したりする行為を何と呼ぶか。", choices: { A: "無作為抽出", B: "p-hacking", C: "標準化", D: "交絡の統制" }, answer: "B", exp: "p-hackingとは、統計的に有意な結果(p<.05など)が得られるまでデータの取り扱いや分析方法を恣意的に操作する行為であり、誤った結論を導くリスクを高める、避けるべき研究上の問題行動。" }],
+    advanced: [{ q: "検定を行う前に仮説を立てるべきところを、データを見た後に「後付けで」仮説をあたかも事前に立てていたかのように報告する行為を何と呼ぶか。", choices: { A: "p-hacking", B: "HARKing(Hypothesizing After the Results are Known)", C: "無作為割当", D: "多重比較" }, answer: "B", exp: "HARKingは、データ分析の結果を見た後に、その結果に合わせて仮説を後付けであたかも最初から立てていたかのように報告する研究上の問題行動であり、探索的な発見を確証的な検証であるかのように偽装してしまう点が問題視される。" }],
+  },
 };
 
-export default function App() {
-  const [screen, setScreen] = useState("home");
-  const [selectedSession, setSelectedSession] = useState(2);
-  const [selectedDifficulty, setSelectedDifficulty] = useState("basic");
-  const [question, setQuestion] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [chosen, setChosen] = useState(null);
-  const [revealed, setRevealed] = useState(false);
-  const [sessionScore, setSessionScore] = useState({ correct: 0, total: 0 });
-  const [error, setError] = useState(null);
+// ── 状態 ──
+let selectedSession = 2;
+let selectedDifficulty = "basic";
+let sessionScore = { correct: 0, total: 0 };
+let currentQuestion = null;
+let chosen = null;
+let revealed = false;
 
-  const fetchQuestion = useCallback(async (sessionId, difficulty) => {
-    const sid = sessionId ?? selectedSession;
-    const diff = difficulty ?? selectedDifficulty;
-    const session = SESSIONS.find((s) => s.id === sid);
-    setLoading(true);
-    setQuestion(null);
-    setChosen(null);
-    setRevealed(false);
-    setError(null);
-    setScreen("quiz");
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: buildPrompt(session, diff) }],
-        }),
-      });
-      const data = await res.json();
-      const text = data.content?.find((b) => b.type === "text")?.text || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      setQuestion(parsed);
-    } catch (e) {
-      setError("問題の生成に失敗しました。もう一度お試しください。");
-      setScreen("home");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedSession, selectedDifficulty]);
+const homeScreen = document.getElementById("home-screen");
+const quizScreen = document.getElementById("quiz-screen");
+const sessionListEl = document.getElementById("session-list");
+const diffRowEl = document.getElementById("diff-row");
+const startBtn = document.getElementById("start-btn");
+const startSessionNumEl = document.getElementById("start-session-num");
+const backBtn = document.getElementById("back-btn");
+const sessionTagEl = document.getElementById("session-tag");
+const questionTextEl = document.getElementById("question-text");
+const choicesColEl = document.getElementById("choices-col");
+const expAreaEl = document.getElementById("exp-area");
+const errorTextEl = document.getElementById("error-text");
+const homeScorePillEl = document.getElementById("home-score-pill");
+const quizScorePillEl = document.getElementById("quiz-score-pill");
 
-  const handleChoice = (key) => {
-    if (revealed || loading) return;
-    setChosen(key);
-    setRevealed(true);
-    const isCorrect = key === question.answer;
-    setSessionScore((s) => ({
-      correct: s.correct + (isCorrect ? 1 : 0),
-      total: s.total + 1,
-    }));
-  };
-
-  const currentSession = SESSIONS.find((s) => s.id === selectedSession);
+function updateScorePills() {
   const pct = sessionScore.total > 0 ? Math.round((sessionScore.correct / sessionScore.total) * 100) : null;
-
-  // ── HOME ──
-  if (screen === "home") {
-    return (
-      <div style={s.page}>
-        <div style={s.card}>
-          <div style={s.headerRow}>
-            <span style={s.badge}>心理学統計法</span>
-            {pct !== null && (
-              <span style={{ ...s.scorePill, background: pct >= 70 ? "#e8f5ee" : "#fdecea", color: pct >= 70 ? "#1e7a4a" : "#c0392b" }}>
-                {sessionScore.correct}/{sessionScore.total} ({pct}%)
-              </span>
-            )}
-          </div>
-          <h1 style={s.title}>AI問題生成<br /><span style={s.titleAccent}>クイズ</span></h1>
-          <p style={s.subtitle}>回とレベルを選ぶだけ。毎回新しい問題が出ます。</p>
-
-          <div style={s.sectionLabel}>回を選ぶ</div>
-          <div style={s.sessionList}>
-            {SESSIONS.map((session) => (
-              <button
-                key={session.id}
-                onClick={() => setSelectedSession(session.id)}
-                style={{
-                  ...s.sessionBtn,
-                  ...(selectedSession === session.id ? s.sessionBtnActive : {}),
-                }}
-              >
-                <span style={s.sessionNum}>{session.id}</span>
-                <span style={s.sessionTitle}>{session.title}</span>
-              </button>
-            ))}
-          </div>
-
-          <div style={s.sectionLabel}>難易度</div>
-          <div style={s.diffRow}>
-            {DIFFICULTY.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => setSelectedDifficulty(d.id)}
-                style={{
-                  ...s.diffBtn,
-                  ...(selectedDifficulty === d.id ? s.diffBtnActive : {}),
-                }}
-              >
-                <div style={s.diffLabel}>{d.label}</div>
-                <div style={s.diffDesc}>{d.desc}</div>
-              </button>
-            ))}
-          </div>
-
-          <button onClick={() => fetchQuestion()} style={s.startBtn}>
-            第{selectedSession}回の問題を生成 →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── QUIZ ──
-  return (
-    <div style={s.page}>
-      <div style={s.card}>
-        <div style={s.quizTopRow}>
-          <button onClick={() => setScreen("home")} style={s.backBtn}>← 回選択</button>
-          {pct !== null && (
-            <span style={{ ...s.scorePill, background: pct >= 70 ? "#e8f5ee" : "#fdecea", color: pct >= 70 ? "#1e7a4a" : "#c0392b" }}>
-              ✅ {sessionScore.correct}/{sessionScore.total}
-            </span>
-          )}
-        </div>
-
-        <div style={s.sessionTag}>
-          第{selectedSession}回｜{currentSession?.title}｜
-          {DIFFICULTY.find((d) => d.id === selectedDifficulty)?.label}
-        </div>
-
-        {loading && (
-          <div style={s.loadingBox}>
-            <svg width="40" height="40" viewBox="0 0 40 40">
-              <circle cx="20" cy="20" r="16" fill="none" stroke="#e0e8ec" strokeWidth="3" />
-              <circle cx="20" cy="20" r="16" fill="none" stroke="#4F7F8F" strokeWidth="3"
-                strokeDasharray="60 40" strokeLinecap="round">
-                <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.9s" repeatCount="indefinite" />
-              </circle>
-            </svg>
-            <p style={s.loadingText}>AIが問題を生成しています…</p>
-          </div>
-        )}
-
-        {!loading && question && (
-          <>
-            <p style={s.questionText}>{question.question}</p>
-            <div style={s.choicesCol}>
-              {["A", "B", "C", "D"].map((key) => {
-                let style = { ...s.choiceBtn };
-                if (revealed) {
-                  if (key === question.answer) {
-                    style = { ...style, background: "#eafaf1", borderColor: "#2ecc71", color: "#1a6a3a" };
-                  } else if (key === chosen) {
-                    style = { ...style, background: "#fdecea", borderColor: "#e74c3c", color: "#a93226" };
-                  } else {
-                    style = { ...style, opacity: 0.5 };
-                  }
-                }
-                return (
-                  <button key={key} onClick={() => handleChoice(key)} style={style}>
-                    <span style={s.choiceKey}>{key}</span>
-                    <span>{question.choices[key]}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {revealed && (
-              <>
-                <div style={{
-                  ...s.expBox,
-                  borderLeft: `4px solid ${chosen === question.answer ? "#2ecc71" : "#e74c3c"}`,
-                }}>
-                  <div style={s.expResult}>
-                    {chosen === question.answer ? "🎉 正解！" : `❌ 不正解（正解: ${question.answer}）`}
-                  </div>
-                  <p style={s.expText}>{question.explanation}</p>
-                </div>
-                <div style={s.nextRow}>
-                  <button onClick={() => fetchQuestion()} style={s.nextBtn}>
-                    もう1問 →
-                  </button>
-                  <button onClick={() => setScreen("home")} style={s.changeBtn}>
-                    回を変える
-                  </button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {error && <p style={s.errorText}>{error}</p>}
-      </div>
-    </div>
-  );
+  [homeScorePillEl, quizScorePillEl].forEach((el) => {
+    if (pct === null) {
+      el.classList.add("hidden");
+      return;
+    }
+    el.classList.remove("hidden");
+    el.style.background = pct >= 70 ? "#e8f5ee" : "#fdecea";
+    el.style.color = pct >= 70 ? "#1e7a4a" : "#c0392b";
+    el.textContent = el === quizScorePillEl
+      ? `✅ ${sessionScore.correct}/${sessionScore.total}`
+      : `${sessionScore.correct}/${sessionScore.total} (${pct}%)`;
+  });
 }
 
-const s = {
-  page: {
-    minHeight: "100vh",
-    background: "#E7EEEC",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    padding: "20px 12px 40px",
-    fontFamily: "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif",
-  },
-  card: {
-    background: "#fff",
-    borderRadius: 18,
-    padding: "24px 20px",
-    width: "100%",
-    maxWidth: 540,
-    boxShadow: "0 2px 20px rgba(60,90,100,0.10)",
-  },
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  badge: {
-    background: "#4F7F8F",
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.06em",
-    borderRadius: 5,
-    padding: "3px 9px",
-  },
-  scorePill: {
-    fontSize: 12,
-    fontWeight: 700,
-    borderRadius: 20,
-    padding: "3px 11px",
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 800,
-    color: "#1a2f38",
-    margin: "0 0 6px",
-    lineHeight: 1.25,
-  },
-  titleAccent: { color: "#4F7F8F" },
-  subtitle: {
-    fontSize: 12,
-    color: "#888",
-    margin: "0 0 22px",
-    lineHeight: 1.6,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: 800,
-    color: "#aaa",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  sessionList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 5,
-    marginBottom: 20,
-    maxHeight: 320,
-    overflowY: "auto",
-    borderRadius: 10,
-    border: "1px solid #e8eef0",
-    padding: "4px",
-  },
-  sessionBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1.5px solid transparent",
-    background: "transparent",
-    cursor: "pointer",
-    textAlign: "left",
-  },
-  sessionBtnActive: {
-    background: "#f0f6f8",
-    border: "1.5px solid #4F7F8F",
-  },
-  sessionNum: {
-    fontSize: 11,
-    fontWeight: 800,
-    color: "#4F7F8F",
-    minWidth: 22,
-    background: "#e8f2f5",
-    borderRadius: 4,
-    padding: "2px 5px",
-    textAlign: "center",
-  },
-  sessionTitle: {
-    fontSize: 13,
-    color: "#333",
-    fontWeight: 500,
-  },
-  diffRow: {
-    display: "flex",
-    gap: 8,
-    marginBottom: 22,
-  },
-  diffBtn: {
-    flex: 1,
-    padding: "10px 6px",
-    borderRadius: 10,
-    border: "1.5px solid #dde5e8",
-    background: "#fff",
-    cursor: "pointer",
-    textAlign: "center",
-  },
-  diffBtnActive: {
-    border: "2px solid #E8A164",
-    background: "#fff9f4",
-  },
-  diffLabel: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: "#333",
-    marginBottom: 2,
-  },
-  diffDesc: {
-    fontSize: 10,
-    color: "#999",
-  },
-  startBtn: {
-    width: "100%",
-    padding: "14px",
-    background: "#4F7F8F",
-    color: "#fff",
-    border: "none",
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  quizTopRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  backBtn: {
-    background: "none",
-    border: "none",
-    color: "#4F7F8F",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    padding: 0,
-  },
-  sessionTag: {
-    fontSize: 11,
-    color: "#888",
-    fontWeight: 600,
-    marginBottom: 18,
-    lineHeight: 1.5,
-  },
-  loadingBox: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "48px 0 40px",
-  },
-  loadingText: { color: "#999", fontSize: 13, marginTop: 12 },
-  questionText: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "#1a2f38",
-    lineHeight: 1.75,
-    marginBottom: 18,
-  },
-  choicesCol: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 9,
-    marginBottom: 18,
-  },
-  choiceBtn: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: "12px 14px",
-    borderRadius: 10,
-    border: "1.5px solid #dde5e8",
-    background: "#fff",
-    cursor: "pointer",
-    fontSize: 13,
-    lineHeight: 1.55,
-    textAlign: "left",
-    color: "#222",
-  },
-  choiceKey: {
-    fontWeight: 800,
-    fontSize: 13,
-    minWidth: 18,
-    color: "#4F7F8F",
-    flexShrink: 0,
-  },
-  expBox: {
-    background: "#f7fafb",
-    borderRadius: 10,
-    padding: "14px 16px",
-    marginBottom: 16,
-  },
-  expResult: {
-    fontWeight: 700,
-    fontSize: 14,
-    marginBottom: 8,
-    color: "#1a2f38",
-  },
-  expText: {
-    fontSize: 13,
-    color: "#555",
-    lineHeight: 1.7,
-    margin: 0,
-  },
-  nextRow: {
-    display: "flex",
-    gap: 8,
-  },
-  nextBtn: {
-    flex: 2,
-    padding: "13px",
-    background: "#4F7F8F",
-    color: "#fff",
-    border: "none",
-    borderRadius: 12,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  changeBtn: {
-    flex: 1,
-    padding: "13px",
-    background: "#f0f6f8",
-    color: "#4F7F8F",
-    border: "none",
-    borderRadius: 12,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  errorText: {
-    color: "#e74c3c",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 12,
-  },
-};
+function renderHome() {
+  sessionListEl.innerHTML = "";
+  SESSIONS.forEach((session) => {
+    const btn = document.createElement("button");
+    btn.className = "session-btn" + (selectedSession === session.id ? " active" : "");
+    btn.innerHTML = `<span class="session-num">${session.id}</span><span class="session-title">${session.title}</span>`;
+    btn.addEventListener("click", () => {
+      selectedSession = session.id;
+      renderHome();
+    });
+    sessionListEl.appendChild(btn);
+  });
+
+  diffRowEl.innerHTML = "";
+  DIFFICULTY.forEach((d) => {
+    const btn = document.createElement("button");
+    btn.className = "diff-btn" + (selectedDifficulty === d.id ? " active" : "");
+    btn.innerHTML = `<div class="diff-label">${d.label}</div><div class="diff-desc">${d.desc}</div>`;
+    btn.addEventListener("click", () => {
+      selectedDifficulty = d.id;
+      renderHome();
+    });
+    diffRowEl.appendChild(btn);
+  });
+
+  startSessionNumEl.textContent = selectedSession;
+  updateScorePills();
+}
+
+function pickQuestion(sessionId, difficulty) {
+  const pool = (QUESTIONS[sessionId] && QUESTIONS[sessionId][difficulty]) || [];
+  if (pool.length === 0) return null;
+  if (pool.length === 1) return pool[0];
+  let next;
+  do {
+    next = pool[Math.floor(Math.random() * pool.length)];
+  } while (next === currentQuestion && pool.length > 1);
+  return next;
+}
+
+function startQuiz() {
+  const session = SESSIONS.find((s) => s.id === selectedSession);
+  currentQuestion = pickQuestion(selectedSession, selectedDifficulty);
+  chosen = null;
+  revealed = false;
+  errorTextEl.classList.add("hidden");
+
+  homeScreen.classList.add("hidden");
+  quizScreen.classList.remove("hidden");
+
+  const diffLabel = DIFFICULTY.find((d) => d.id === selectedDifficulty)?.label;
+  sessionTagEl.textContent = `第${selectedSession}回｜${session.title}｜${diffLabel}`;
+
+  if (!currentQuestion) {
+    questionTextEl.textContent = "";
+    choicesColEl.innerHTML = "";
+    expAreaEl.innerHTML = "";
+    errorTextEl.textContent = "この回・難易度の問題はまだ準備中です。別の回や難易度を選んでください。";
+    errorTextEl.classList.remove("hidden");
+    updateScorePills();
+    return;
+  }
+
+  renderQuestion();
+}
+
+function renderQuestion() {
+  questionTextEl.textContent = currentQuestion.question ?? currentQuestion.q;
+  choicesColEl.innerHTML = "";
+  expAreaEl.innerHTML = "";
+
+  ["A", "B", "C", "D"].forEach((key) => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    if (revealed) {
+      if (key === currentQuestion.answer) btn.classList.add("correct");
+      else if (key === chosen) btn.classList.add("wrong");
+      else btn.classList.add("dim");
+    }
+    btn.innerHTML = `<span class="choice-key">${key}</span><span>${currentQuestion.choices[key]}</span>`;
+    btn.addEventListener("click", () => handleChoice(key));
+    choicesColEl.appendChild(btn);
+  });
+
+  if (revealed) {
+    const isCorrect = chosen === currentQuestion.answer;
+    const box = document.createElement("div");
+    box.className = "exp-box";
+    box.style.borderLeft = `4px solid ${isCorrect ? "#2ecc71" : "#e74c3c"}`;
+    box.innerHTML = `
+      <div class="exp-result">${isCorrect ? "🎉 正解！" : `❌ 不正解（正解: ${currentQuestion.answer}）`}</div>
+      <p class="exp-text">${currentQuestion.exp ?? currentQuestion.explanation}</p>
+    `;
+    expAreaEl.appendChild(box);
+
+    const nextRow = document.createElement("div");
+    nextRow.className = "next-row";
+    nextRow.innerHTML = `
+      <button class="next-btn" id="next-q-btn">もう1問 →</button>
+      <button class="change-btn" id="change-session-btn">回を変える</button>
+    `;
+    expAreaEl.appendChild(nextRow);
+
+    document.getElementById("next-q-btn").addEventListener("click", startQuiz);
+    document.getElementById("change-session-btn").addEventListener("click", goHome);
+  }
+
+  updateScorePills();
+}
+
+function handleChoice(key) {
+  if (revealed) return;
+  chosen = key;
+  revealed = true;
+  const isCorrect = key === currentQuestion.answer;
+  sessionScore = { correct: sessionScore.correct + (isCorrect ? 1 : 0), total: sessionScore.total + 1 };
+  renderQuestion();
+}
+
+function goHome() {
+  quizScreen.classList.add("hidden");
+  homeScreen.classList.remove("hidden");
+  renderHome();
+}
+
+startBtn.addEventListener("click", startQuiz);
+backBtn.addEventListener("click", goHome);
+
+renderHome();
+</script>
+</body>
+</html>
